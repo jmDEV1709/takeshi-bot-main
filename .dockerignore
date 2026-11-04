@@ -1,0 +1,22 @@
+# Dependencies and package-manager caches are recreated inside the image.
+node_modules
+npm-debug.log*
+
+# Local credentials, sessions and runtime-generated files.
+assets/auth/baileys
+assets/temp
+*.log
+
+# Local environment files and editor/OS metadata.
+.env
+.env.*
+.git
+.gitignore
+.vscode
+.idea
+Thumbs.db
+.DS_Store
+
+# Test and coverage output.
+coverage
+.nyc_output

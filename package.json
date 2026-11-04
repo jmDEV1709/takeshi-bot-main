@@ -1,0 +1,31 @@
+{
+  "name": "jm-bot",
+  "version": "8.11.0",
+  "description": "Um bot de WhatsApp multifunções.",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node ./src/index.js",
+    "test": "node ./src/test.js",
+    "test:all": "node --test --test-concurrency=1",
+    "patch:baileys": "node ./scripts/patch-baileys.mjs",
+    "postinstall": "node ./scripts/patch-baileys.mjs"
+  },
+  "engines": {
+    "node": ">=22.8.0"
+  },
+  "keywords": [],
+  "author": "JM_DEVELOPER",
+  "license": "ISC",
+  "dependencies": {
+    "@cacheable/node-cache": "^3.0.0",
+    "axios": "^1.14.0",
+    "baileys": "7.0.0-rc14",
+    "correios-brasil": "^3.0.6",
+    "node-cache": "^5.1.2",
+    "node-webpmux": "^3.2.1",
+    "openai": "^6.33.0",
+    "pino": "^10.3.1",
+    "tiktoken": "^1.0.21"
+  }
+}
