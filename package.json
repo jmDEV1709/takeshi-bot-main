@@ -18,14 +18,20 @@
   "author": "JM_DEVELOPER",
   "license": "ISC",
   "dependencies": {
+    "@bochilteam/scraper-instagram": "^5.0.0",
+    "@bochilteam/scraper-tiktok": "^5.0.0",
+    "@bochilteam/scraper-twitter": "^5.0.0",
     "@cacheable/node-cache": "^3.0.0",
     "axios": "^1.14.0",
     "baileys": "7.0.0-rc14",
+    "cheerio": "^1.0.0-rc.12",
     "correios-brasil": "^3.0.6",
     "node-cache": "^5.1.2",
     "node-webpmux": "^3.2.1",
     "openai": "^6.33.0",
     "pino": "^10.3.1",
-    "tiktoken": "^1.0.21"
+    "tiktoken": "^1.0.21",
+    "yt-search": "^2.13.1",
+    "ytdl-core": "^4.11.5"
   }
 }

@@ -1,9 +1,9 @@
 import { PREFIX } from "../../../config.js";
-import { InvalidParameterError, WarningError } from "../../../errors/index.js";
-import { xTwitter } from "../../../services/spider-x-api.js";
-import { errorLog } from "../../../utils/logger.js";
-
-const VIDEO_EXTENSIONS = /\.(mp4|webm|mov|mkv)(\?|$)/i;
+import { InvalidParameterError } from "../../../errors/index.js";
+import {
+  downloadSocialVideo,
+  socialDownloadError,
+} from "../../../services/social-downloader.js";
 
 export default {
   name: "x-twitter",
@@ -14,8 +14,7 @@ export default {
    * @param {CommandHandleProps} props
    */
   handle: async ({
-    sendVideoFromURL,
-    sendImageFromURL,
+    sendVideoFromBuffer,
     fullArgs,
     sendWaitReact,
     sendSuccessReact,
@@ -29,29 +28,12 @@ export default {
 
     await sendWaitReact();
 
-    if (!fullArgs.includes("x.com") && !fullArgs.includes("twitter.com")) {
-      throw new WarningError("O link não é do X (Twitter)!");
-    }
-
     try {
-      const data = await xTwitter(fullArgs);
-
-      if (!data || !data.url) {
-        await sendErrorReply("Nenhum resultado encontrado!");
-        return;
-      }
-
+      const video = await downloadSocialVideo(fullArgs[0], "x");
       await sendSuccessReact();
-
-      if (VIDEO_EXTENSIONS.test(data.url)) {
-        await sendVideoFromURL(data.url);
-        return;
-      }
-
-      await sendImageFromURL(data.url);
+      await sendVideoFromBuffer(video, "Vídeo baixado do X");
     } catch (error) {
-      errorLog(JSON.stringify(error, null, 2));
-      await sendErrorReply(error.message);
+      await sendErrorReply(socialDownloadError(error, "X/Twitter"));
     }
   },
 };
