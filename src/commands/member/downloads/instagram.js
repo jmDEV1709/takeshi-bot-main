@@ -1,7 +1,9 @@
 import { PREFIX } from "../../../config.js";
 import { InvalidParameterError, WarningError } from "../../../errors/index.js";
-import { download } from "../../../services/spider-x-api.js";
-import { errorLog } from "../../../utils/logger.js";
+import {
+  downloadSocialVideo,
+  socialDownloadError,
+} from "../../../services/social-downloader.js";
 
 export default {
   name: "instagram",
@@ -12,7 +14,7 @@ export default {
    * @param {CommandHandleProps} props
    */
   handle: async ({
-    sendVideoFromURL,
+    sendVideoFromBuffer,
     fullArgs,
     sendWaitReact,
     sendSuccessReact,
@@ -26,24 +28,15 @@ export default {
 
     await sendWaitReact();
 
-    if (!fullArgs.includes("instagram.com")) {
-      throw new WarningError("O link não é do Instagram!");
-    }
-
     try {
-      const data = await download("instagram", fullArgs);
-
-      if (!data || !data.url) {
-        await sendErrorReply("Nenhum resultado encontrado!");
-        return;
+      if (!fullArgs[0].includes("instagram.com")) {
+        throw new WarningError("O link não é do Instagram!");
       }
-
+      const video = await downloadSocialVideo(fullArgs[0], "instagram");
       await sendSuccessReact();
-
-      await sendVideoFromURL(data.url);
+      await sendVideoFromBuffer(video, "Vídeo baixado do Instagram");
     } catch (error) {
-      errorLog(JSON.stringify(error, null, 2));
-      await sendErrorReply(error.message);
+      await sendErrorReply(socialDownloadError(error, "Instagram"));
     }
   },
 };

@@ -1,18 +1,20 @@
 import { PREFIX } from "../../../config.js";
 import { InvalidParameterError, WarningError } from "../../../errors/index.js";
-import { download } from "../../../services/spider-x-api.js";
-import { errorLog } from "../../../utils/logger.js";
+import {
+  downloadSocialVideo,
+  socialDownloadError,
+} from "../../../services/social-downloader.js";
 
 export default {
   name: "tik-tok",
   description: "Faço o download de vídeos do TikTok",
-  commands: ["tik-tok", "ttk", "tik"],
+  commands: ["tik-tok", "ttk", "tik", "tk"],
   usage: `${PREFIX}tik-tok https://www.tiktok.com/@yrrefutavel/video/7359413022483287301`,
   /**
    * @param {CommandHandleProps} props
    */
   handle: async ({
-    sendVideoFromURL,
+    sendVideoFromBuffer,
     fullArgs,
     sendWaitReact,
     sendSuccessReact,
@@ -24,24 +26,15 @@ export default {
 
     await sendWaitReact();
 
-    if (!fullArgs.includes("tiktok")) {
-      throw new WarningError("O link não é do TikTok!");
-    }
-
     try {
-      const data = await download("tik-tok", fullArgs);
-
-      if (!data) {
-        await sendErrorReply("Nenhum resultado encontrado!");
-        return;
+      if (!fullArgs[0].includes("tiktok")) {
+        throw new WarningError("O link não é do TikTok!");
       }
-
+      const video = await downloadSocialVideo(fullArgs[0], "tiktok");
       await sendSuccessReact();
-
-      await sendVideoFromURL(data.download_link);
+      await sendVideoFromBuffer(video, "Vídeo baixado do TikTok");
     } catch (error) {
-      errorLog(JSON.stringify(error, null, 2));
-      await sendErrorReply(error.message);
+      await sendErrorReply(socialDownloadError(error, "TikTok"));
     }
   },
 };

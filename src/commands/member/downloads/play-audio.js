@@ -1,10 +1,10 @@
 import { PREFIX } from "../../../config.js";
 import { InvalidParameterError } from "../../../errors/index.js";
-import { play } from "../../../services/spider-x-api.js";
+import fs from "node:fs";
 import {
-  formatSecondsToMinutesAndSeconds,
-  getRandomNumber,
-} from "../../../utils/index.js";
+  downloadYouTubeAudio,
+  resolveYouTubeUrl,
+} from "../../../services/youtube-audio.js";
 
 export default {
   name: "play-audio",
@@ -15,11 +15,9 @@ export default {
    * @param {CommandHandleProps} props
    */
   handle: async ({
-    sendAudioFromURL,
-    sendImageFromURL,
+    sendAudioFromBuffer,
     fullArgs,
     sendWaitReact,
-    sendSuccessReact,
     sendErrorReply,
   }) => {
     if (!fullArgs.length) {
@@ -28,39 +26,31 @@ export default {
       );
     }
 
-    if (fullArgs.includes("http://") || fullArgs.includes("https://")) {
-      throw new InvalidParameterError(
-        `Você não pode usar links para baixar músicas! Use ${PREFIX}yt-mp3 link`,
-      );
-    }
-
     await sendWaitReact();
 
-    const data = await play("audio", fullArgs);
+    let outputPath;
 
-    if (!data) {
-      await sendErrorReply("Nenhum resultado encontrado!");
-      return;
+    try {
+      const youtubeUrl = await resolveYouTubeUrl(fullArgs);
+      const download = await downloadYouTubeAudio(youtubeUrl);
+      outputPath = download.outputPath;
+
+      await sendAudioFromBuffer(await fs.promises.readFile(outputPath));
+    } catch (error) {
+      if (error.message === "SEARCH_NO_RESULTS") {
+        await sendErrorReply("Não encontrei resultados para essa busca no YouTube.");
+      } else if (error.message === "FILE_TOO_LARGE") {
+        await sendErrorReply("O áudio ultrapassa o limite de 25 MB do bot.");
+      } else if (error.message === "AUDIO_FORMAT_NOT_FOUND") {
+        await sendErrorReply("Não encontrei um formato de áudio compatível para esse vídeo.");
+      } else {
+        console.error("Erro no comando play:", error);
+        await sendErrorReply("Não consegui baixar o áudio agora. Tente outro link ou outra música.");
+      }
+    } finally {
+      if (outputPath) {
+        await fs.promises.unlink(outputPath).catch(() => {});
+      }
     }
-
-    await sendSuccessReact();
-
-    const randomSeconds = getRandomNumber(10, 20);
-    const videoDuration = formatSecondsToMinutesAndSeconds(
-      data.total_duration_in_seconds,
-    );
-
-    await sendImageFromURL(
-      data.thumbnail,
-      `*Título*: ${data.title}
-        
-*Descrição*: ${data.description}
-*Canal*: ${data.channel.name}
-
-> 0:${randomSeconds} ━━●──────${videoDuration} ↻ ⊲ Ⅱ ⊳ ↺
-> ılı.lıllılı.ıllı..ılı.lıllılı.ıllı`,
-    );
-
-    await sendAudioFromURL(data.url);
   },
 };
