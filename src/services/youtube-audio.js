@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { pipeline } from "node:stream/promises";
-import ytdl from "ytdl-core";
+import ytdl from "@distube/ytdl-core";
 import ytSearch from "yt-search";
 import { TEMP_DIR } from "../config.js";
 import { getRandomName } from "../utils/index.js";
