@@ -22,7 +22,6 @@
     "@bochilteam/scraper-tiktok": "^5.0.0",
     "@bochilteam/scraper-twitter": "^5.0.0",
     "@cacheable/node-cache": "^3.0.0",
-    "@distube/ytdl-core": "^4.16.12",
     "axios": "^1.14.0",
     "baileys": "7.0.0-rc14",
     "cheerio": "^1.0.0-rc.12",
