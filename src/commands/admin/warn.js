@@ -7,7 +7,7 @@ import { addWarn, getWarnLimit } from "../../utils/warnSystem.js";
 export default {
   name: "warn",
   description: "Aplica advertência a um membro.",
-  commands: ["warn", "advertir", "adverter", "advt"],
+  commands: ["warn", "advertir", "adverter", "advt", "punir"],
   /**
    * @param {CommandHandleProps} props
    */
