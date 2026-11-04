@@ -1,11 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
-import { pipeline } from "node:stream/promises";
-import ytdl from "@distube/ytdl-core";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import ytSearch from "yt-search";
 import { TEMP_DIR } from "../config.js";
 import { getRandomName } from "../utils/index.js";
 
+const execFileAsync = promisify(execFile);
 const MAX_AUDIO_SIZE = 25 * 1024 * 1024;
 
 function isUrl(value) {
@@ -30,50 +31,53 @@ export async function resolveYouTubeUrl(query) {
 export async function downloadYouTubeAudio(url) {
   await fs.promises.mkdir(TEMP_DIR, { recursive: true });
 
-  const info = await ytdl.getInfo(url);
-  const format =
-    ytdl.chooseFormat(info.formats, {
-      quality: "highestaudio",
-      filter: (candidate) =>
-        candidate.hasAudio &&
-        !candidate.hasVideo &&
-        ["mp4", "m4a"].includes(candidate.container),
-    }) ||
-    ytdl.chooseFormat(info.formats, {
-      quality: "highestaudio",
-      filter: "audioonly",
-    });
-
-  if (!format?.url) {
-    throw new Error("AUDIO_FORMAT_NOT_FOUND");
-  }
-
-  const contentLength = Number(format.contentLength || 0);
-
-  if (contentLength && contentLength > MAX_AUDIO_SIZE) {
-    throw new Error("FILE_TOO_LARGE");
-  }
-
-  const outputPath = path.resolve(TEMP_DIR, getRandomName(format.container || "m4a"));
-  const audioStream = ytdl.downloadFromInfo(info, {
-    format,
-    highWaterMark: 1 << 20,
-  });
-  let downloadedSize = 0;
-
-  audioStream.on("data", (chunk) => {
-    downloadedSize += chunk.length;
-
-    if (downloadedSize > MAX_AUDIO_SIZE) {
-      audioStream.destroy(new Error("FILE_TOO_LARGE"));
-    }
-  });
+  const outputPath = path.resolve(TEMP_DIR, getRandomName("m4a"));
 
   try {
-    await pipeline(audioStream, fs.createWriteStream(outputPath));
-    return { info, format, outputPath };
+    await execFileAsync(
+      "yt-dlp",
+      [
+        "--no-playlist",
+        "--no-warnings",
+        "--no-progress",
+        "--extract-audio",
+        "--audio-format",
+        "m4a",
+        "--audio-quality",
+        "5",
+        "--max-filesize",
+        `${MAX_AUDIO_SIZE}`,
+        "--output",
+        outputPath,
+        url,
+      ],
+      { maxBuffer: 1024 * 1024 },
+    );
+
+    const stats = await fs.promises.stat(outputPath);
+
+    if (stats.size > MAX_AUDIO_SIZE) {
+      throw new Error("FILE_TOO_LARGE");
+    }
+
+    return { outputPath };
   } catch (error) {
     await fs.promises.unlink(outputPath).catch(() => {});
+
+    const details = `${error.message || ""}\n${error.stderr || ""}`;
+
+    if (/requested format|audio format|no video formats/i.test(details)) {
+      throw new Error("AUDIO_FORMAT_NOT_FOUND");
+    }
+
+    if (/max-filesize|file is larger|exceeds the maximum/i.test(details)) {
+      throw new Error("FILE_TOO_LARGE");
+    }
+
+    if (/sign in|not a bot|confirm you.re not a bot|login required/i.test(details)) {
+      throw new Error("YOUTUBE_AUTH_REQUIRED");
+    }
+
     throw error;
   }
 }

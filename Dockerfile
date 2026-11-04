@@ -33,6 +33,7 @@ RUN apt-get update \
         libxshmfence1 \
         pkg-config \
         python3 \
+        yt-dlp \
         webp \
     && rm -rf /var/lib/apt/lists/*
 

@@ -43,6 +43,10 @@ export default {
         await sendErrorReply("O áudio ultrapassa o limite de 25 MB do bot.");
       } else if (error.message === "AUDIO_FORMAT_NOT_FOUND") {
         await sendErrorReply("Não encontrei um formato de áudio compatível para esse vídeo.");
+      } else if (error.message === "YOUTUBE_AUTH_REQUIRED") {
+        await sendErrorReply(
+          "O YouTube bloqueou este download por exigir verificação ou login. Tente outro vídeo público.",
+        );
       } else {
         console.error("Erro no comando play:", error);
         await sendErrorReply("Não consegui baixar o áudio agora. Tente outro link ou outra música.");
