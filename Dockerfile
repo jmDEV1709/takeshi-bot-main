@@ -40,6 +40,7 @@ WORKDIR /app
 
 # Copy manifests first so dependency installation remains cached between builds.
 COPY package.json package-lock.json ./
+COPY scripts/patch-baileys.mjs ./scripts/patch-baileys.mjs
 RUN --mount=type=cache,target=/root/.npm \
     npm ci --omit=dev \
     && npm cache clean --force
