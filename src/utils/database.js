@@ -19,6 +19,7 @@ const ANTI_LINK_GROUPS_FILE = "anti-link-groups";
 const AUTO_RESPONDER_FILE = "auto-responder";
 const AUTO_RESPONDER_GROUPS_FILE = "auto-responder-groups";
 const AUTO_STICKER_GROUPS_FILE = "auto-sticker-groups";
+const ANTI_DELETE_GROUPS_FILE = "anti-delete-groups";
 const CONFIG_FILE = "config";
 const EXIT_GROUPS_FILE = "exit-groups";
 const GROUP_RESTRICTIONS_FILE = "group-restrictions";
@@ -528,6 +529,17 @@ export function setSpiderApiToken(token) {
   config.spider_api_token = token;
 
   writeJSON(filename, config, {});
+}
+
+export function setAntiDeleteStatus(groupId, enabled) {
+  const groups = readJSON(ANTI_DELETE_GROUPS_FILE, {});
+  groups[groupId] = enabled;
+  writeJSON(ANTI_DELETE_GROUPS_FILE, groups, {});
+}
+
+export function getAntiDeleteStatus(groupId) {
+  const groups = readJSON(ANTI_DELETE_GROUPS_FILE, {});
+  return groups[groupId] === true;
 }
 
 export function getSpiderApiToken() {

@@ -26,7 +26,14 @@ export default {
     }
 
     await sendWaitReact();
-    await createSticker(paramsHandler);
+    await createSticker({
+      ...paramsHandler,
+      stickerMode: ["full", "inteira", "completa"].includes(
+        String(paramsHandler.args?.[0] || "").toLowerCase(),
+      )
+        ? "full"
+        : "cropped",
+    });
     await sendSuccessReact();
   },
 };

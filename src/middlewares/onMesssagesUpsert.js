@@ -22,6 +22,14 @@ import { recordMessageEnvelope } from "../utils/messageEnvelopeRegistry.js";
 import { hasPaymentMessage } from "../utils/paymentMessage.js";
 import { handleAfkReferences } from "./afkHandler.js";
 import { onGroupParticipantsUpdate } from "./onGroupParticipantsUpdate.js";
+import {
+  getMessageText,
+  getRememberedMessage,
+  isAntiDeleteEnabled,
+  rememberMessage,
+} from "../utils/antiDelete.js";
+import { getContent } from "../utils/index.js";
+import { downloadMediaMessage } from "baileys";
 
 export async function onMessagesUpsert({ socket, messages, startProcess }) {
   if (!messages.length) {
@@ -40,6 +48,38 @@ export async function onMessagesUpsert({ socket, messages, startProcess }) {
     }
 
     try {
+      const revokedKey =
+        webMessage.message?.protocolMessage?.key ||
+        webMessage.message?.protocolMessage?.key?.remoteJid;
+
+      if (webMessage.message?.protocolMessage?.type === 0 && revokedKey) {
+        const groupId = revokedKey.remoteJid;
+        const original = getRememberedMessage(revokedKey);
+
+        if (groupId?.endsWith("@g.us") && isAntiDeleteEnabled(groupId) && original) {
+          const text = getMessageText(original);
+          if (text) {
+            await socket.sendMessage(groupId, {
+              text: `🕵️ Mensagem apagada:\n\n${text}`,
+            });
+          } else if (getContent(original, "image") || getContent(original, "video")) {
+            const buffer = await downloadMediaMessage(
+              original,
+              "buffer",
+              {},
+              { logger: undefined, reuploadRequest: socket.updateMediaMessage },
+            );
+            const content = original.message;
+            if (getContent(original, "image")) {
+              await socket.sendMessage(groupId, { image: buffer, caption: "🕵️ Imagem apagada" });
+            } else if (content?.videoMessage) {
+              await socket.sendMessage(groupId, { video: buffer, caption: "🕵️ Vídeo apagado" });
+            }
+          }
+        }
+        continue;
+      }
+
       if (!webMessage?.key?.remoteJid?.endsWith("@g.us")) {
         continue;
       }
@@ -49,6 +89,7 @@ export async function onMessagesUpsert({ socket, messages, startProcess }) {
       // Registra o envelope (id -> autor/estado) de TODA mensagem de grupo,
       // para corroborar marcações de pagamento e impedir forja (banir inocente).
       recordMessageEnvelope(webMessage, hasPaymentMessage(webMessage));
+      rememberMessage(webMessage);
 
       if (webMessage?.message) {
         messageHandler(socket, webMessage);

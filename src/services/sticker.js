@@ -160,6 +160,7 @@ export async function createSticker(paramsHandler) {
     webMessage,
     sendStickerFromFile,
     userLid,
+    stickerMode = "cropped",
   } = paramsHandler;
 
   const metadata = {
@@ -193,7 +194,11 @@ export async function createSticker(paramsHandler) {
       }
 
       await new Promise((resolve, reject) => {
-        const cmd = `ffmpeg -i "${inputPath}" -vf "scale=512:512:force_original_aspect_ratio=decrease" -f webp -quality 90 "${outputTempPath}"`;
+        const filter =
+          stickerMode === "full"
+            ? "scale=512:512:force_original_aspect_ratio=decrease,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=black@0"
+            : "scale=512:512:force_original_aspect_ratio=decrease";
+        const cmd = `ffmpeg -i "${inputPath}" -vf "${filter}" -f webp -quality 90 "${outputTempPath}"`;
 
         exec(cmd, (error, _, stderr) => {
           if (error) {
@@ -241,7 +246,11 @@ export async function createSticker(paramsHandler) {
       }
 
       await new Promise((resolve, reject) => {
-        const cmd = `ffmpeg -y -i "${inputPath}" -vf "scale=350:350,fps=15" -c:v libwebp -loop 0 -quality 8 -compression_level 6 -method 6 -preset picture -an -f webp "${outputTempPath}"`;
+        const filter =
+          stickerMode === "full"
+            ? "scale=350:350:force_original_aspect_ratio=decrease,pad=350:350:(ow-iw)/2:(oh-ih)/2:color=black@0,fps=15"
+            : "scale=350:350,fps=15";
+        const cmd = `ffmpeg -y -i "${inputPath}" -vf "${filter}" -c:v libwebp -loop 0 -quality 8 -compression_level 6 -method 6 -preset picture -an -f webp "${outputTempPath}"`;
 
         exec(cmd, (error, _, stderr) => {
           if (error) {
