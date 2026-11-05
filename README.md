@@ -463,6 +463,21 @@ export const LINKER_API_KEY = "seu_token_aqui";
 
 Obtenha sua API Key em: [https://linker.devgui.dev](https://linker.devgui.dev)
 
+### Downloads sem Spider X
+
+Os comandos `play`, `insta`, `tk` e `x` usam downloaders locais e não dependem da Spider X.
+O `play` usa `yt-dlp` e o Docker já instala o executável. Para vídeos do YouTube que
+exigem verificação, coloque um arquivo Netscape de cookies em `cookies/cookies.txt`;
+essa pasta é ignorada pelo Git e montada somente como leitura no container.
+
+Se você exportou cookies em JSON, converta-os antes de iniciar o Docker:
+
+```bash
+node scripts/convert-cookies.mjs cookies.json cookies/cookies.txt
+```
+
+Nunca publique arquivos de cookies no GitHub ou compartilhe-os.
+
 ## Funcionalidades gerais
 
 | Função | Contexto | Requer a Spider X API? |

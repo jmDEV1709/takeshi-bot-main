@@ -8,6 +8,8 @@ import { getRandomName } from "../utils/index.js";
 
 const execFileAsync = promisify(execFile);
 const MAX_AUDIO_SIZE = 25 * 1024 * 1024;
+const COOKIES_FILE =
+  process.env.YTDLP_COOKIES_FILE || "/app/cookies/cookies.txt";
 
 function isUrl(value) {
   return /^https?:\/\//i.test(value);
@@ -34,23 +36,36 @@ export async function downloadYouTubeAudio(url) {
   const outputPath = path.resolve(TEMP_DIR, getRandomName("m4a"));
 
   try {
+    const ytDlpArgs = [
+      "--no-playlist",
+      "--no-warnings",
+      "--no-progress",
+      "--extract-audio",
+      "--audio-format",
+      "m4a",
+      "--audio-quality",
+      "5",
+      "--max-filesize",
+      `${MAX_AUDIO_SIZE}`,
+      "--output",
+      outputPath,
+      url,
+    ];
+
+    try {
+      const cookieStats = await fs.promises.stat(COOKIES_FILE);
+      if (cookieStats.isFile() && cookieStats.size > 0) {
+        ytDlpArgs.splice(0, 0, "--cookies", COOKIES_FILE);
+      }
+    } catch (error) {
+      if (error.code !== "ENOENT" && error.code !== "ENOTDIR") {
+        throw error;
+      }
+    }
+
     await execFileAsync(
       "yt-dlp",
-      [
-        "--no-playlist",
-        "--no-warnings",
-        "--no-progress",
-        "--extract-audio",
-        "--audio-format",
-        "m4a",
-        "--audio-quality",
-        "5",
-        "--max-filesize",
-        `${MAX_AUDIO_SIZE}`,
-        "--output",
-        outputPath,
-        url,
-      ],
+      ytDlpArgs,
       { maxBuffer: 1024 * 1024 },
     );
 

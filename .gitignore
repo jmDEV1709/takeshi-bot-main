@@ -3,3 +3,8 @@ node_modules/
 assets/auth/baileys
 assets/temp/
 assets/temp/wa-logs.txt
+cookies/*
+!cookies/.gitkeep
+cookies.txt
+cookies.json
+cookies.md

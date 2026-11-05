@@ -10,6 +10,7 @@ assets/temp
 # Local environment files and editor/OS metadata.
 .env
 .env.*
+cookies
 .git
 .gitignore
 .vscode
