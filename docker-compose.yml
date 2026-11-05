@@ -21,10 +21,11 @@ services:
       - ./database:/app/database
       # Temporary media and runtime logs.
       - ./assets/temp:/app/assets/temp
+      # Optional YouTube cookies; place cookies/cookies.txt locally if needed.
+      - ./cookies:/app/cookies:ro
     security_opt:
       - no-new-privileges:true
     cap_drop:
       - ALL
     tmpfs:
       - /tmp:size=256m,noexec,nosuid
-
