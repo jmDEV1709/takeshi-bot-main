@@ -20,17 +20,19 @@ export default {
     sendSuccessReact,
     sendErrorReply,
   }) => {
-    if (!fullArgs.length) {
+    const url = fullArgs.trim();
+
+    if (!url) {
       throw new InvalidParameterError("Você precisa enviar uma URL do TikTok!");
     }
 
     await sendWaitReact();
 
     try {
-      if (!fullArgs[0].includes("tiktok")) {
+      if (!url.includes("tiktok")) {
         throw new WarningError("O link não é do TikTok!");
       }
-      const video = await downloadSocialVideo(fullArgs[0], "tiktok");
+      const video = await downloadSocialVideo(url, "tiktok");
       await sendSuccessReact();
       await sendVideoFromBuffer(video, "Vídeo baixado do TikTok");
     } catch (error) {

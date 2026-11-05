@@ -106,11 +106,11 @@ export function menuMessage(groupJid) {
 ╭━━⪩ DOWNLOADS ⪨━━
 ▢
 ▢ • ${prefix}facebook
-▢ • ${prefix}instagram
-▢ • ${prefix}play-audio
+▢ • ${prefix}instagram (insta)
+▢ • ${prefix}play-audio (play)
 ▢ • ${prefix}play-video
 ▢ • ${prefix}pinterest
-▢ • ${prefix}tik-tok
+▢ • ${prefix}tik-tok (tk)
 ▢ • ${prefix}tik-tok-audio
 ▢ • ${prefix}xtwitter
 ▢ • ${prefix}yt-mp3
