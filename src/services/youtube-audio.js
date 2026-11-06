@@ -36,6 +36,10 @@ export async function downloadYouTubeAudio(url) {
       "m4a",
       "--audio-quality",
       "5",
+      "--extractor-args",
+      "youtube:player_client=web_safari,android",
+      "--max-filesize",
+      `${MAX_AUDIO_SIZE}`,
       "--output",
       outputPath,
       url,
@@ -89,7 +93,11 @@ export async function downloadYouTubeAudio(url) {
       throw new Error("FILE_TOO_LARGE");
     }
 
-    if (/sign in|not a bot|confirm you.re not a bot|login required/i.test(details)) {
+    if (
+      /sign in|not a bot|confirm you.re not a bot|login required|authentication|po token/i.test(
+        details,
+      )
+    ) {
       throw new Error("YOUTUBE_AUTH_REQUIRED");
     }
 
