@@ -22,23 +22,23 @@ export async function resolveYouTubeUrl(query) {
 
 export async function downloadYouTubeAudio(url) {
   await fs.promises.mkdir(TEMP_DIR, { recursive: true });
-
-  const outputPath = path.resolve(TEMP_DIR, getRandomName("m4a"));
+  const outputDir = await fs.promises.mkdtemp(
+    path.join(TEMP_DIR, "play-"),
+  );
+  const outputTemplate = path.join(outputDir, "%(title)s.%(ext)s");
 
   try {
     const ytDlpArgs = [
       "--no-playlist",
       "--no-warnings",
       "--no-progress",
-      "--extract-audio",
+      "-x",
       "--audio-format",
-      "m4a",
+      "mp3",
       "--audio-quality",
-      "5",
-      "--extractor-args",
-      "youtube:player_client=web_safari,android",
+      "0",
       "--output",
-      outputPath,
+      outputTemplate,
       url,
     ];
 
@@ -67,10 +67,14 @@ export async function downloadYouTubeAudio(url) {
       { maxBuffer: 1024 * 1024 },
     );
 
-    return { outputPath };
-  } catch (error) {
-    await fs.promises.unlink(outputPath).catch(() => {});
+    const files = (await fs.promises.readdir(outputDir)).filter((file) =>
+      file.endsWith(".mp3"),
+    );
+    if (!files.length) throw new Error("AUDIO_NOT_FOUND");
 
+    return { outputPath: path.join(outputDir, files[0]), outputDir };
+  } catch (error) {
+    await fs.promises.rm(outputDir, { recursive: true, force: true });
     const details = `${error.message || ""}\n${error.stderr || ""}`;
 
     if (/no results|video unavailable/i.test(details)) {
