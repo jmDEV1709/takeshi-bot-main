@@ -5,7 +5,6 @@ import { promisify } from "node:util";
 import { TEMP_DIR } from "../config.js";
 import { getRandomName } from "../utils/index.js";
 
-const MAX_VIDEO_SIZE = 64 * 1024 * 1024;
 const DOWNLOAD_TIMEOUT = 120000;
 const execFileAsync = promisify(execFile);
 
@@ -66,8 +65,6 @@ export async function downloadSocialVideo(url, platform) {
     "--no-playlist",
     "--no-warnings",
     "--no-progress",
-    "--max-filesize",
-    `${MAX_VIDEO_SIZE}`,
     "-f",
     "best[ext=mp4]/best",
     "-o",
@@ -91,15 +88,9 @@ export async function downloadSocialVideo(url, platform) {
     if (!files.length) throw new Error("VIDEO_NOT_FOUND");
 
     const outputPath = path.join(TEMP_DIR, files[0]);
-    const stats = await fs.promises.stat(outputPath);
-    if (stats.size > MAX_VIDEO_SIZE) throw new Error("FILE_TOO_LARGE");
-
     return await fs.promises.readFile(outputPath);
   } catch (error) {
     const details = `${error.message || ""}\n${error.stderr || ""}`;
-    if (/max-filesize|file is larger|exceeds the maximum/i.test(details)) {
-      throw new Error("FILE_TOO_LARGE");
-    }
     if (/no video|requested format|unable to download|not found/i.test(details)) {
       throw new Error("VIDEO_NOT_FOUND");
     }
@@ -121,10 +112,7 @@ export function socialDownloadError(error, platformName) {
   if (error.message === "INVALID_URL") return "O link enviado não é válido.";
   if (error.message === "WRONG_PLATFORM") return `Esse link não pertence ao ${platformName}.`;
   if (error.message === "VIDEO_NOT_FOUND") return `Não encontrei vídeo disponível no ${platformName}.`;
-  if (error.message === "FILE_TOO_LARGE") return "O vídeo ultrapassa o limite de 64 MB.";
   if (error.message === "DOWNLOAD_TIMEOUT") return "O download demorou demais e foi cancelado.";
   if (error.code === "ECONNABORTED") return "O download demorou demais e foi cancelado.";
   return `Não consegui baixar o vídeo do ${platformName}. Tente novamente.`;
 }
-
-export { MAX_VIDEO_SIZE };

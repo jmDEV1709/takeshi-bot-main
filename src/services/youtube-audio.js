@@ -6,7 +6,6 @@ import { TEMP_DIR } from "../config.js";
 import { getRandomName } from "../utils/index.js";
 
 const execFileAsync = promisify(execFile);
-const MAX_AUDIO_SIZE = 25 * 1024 * 1024;
 const YTDLP_BIN = process.env.YTDLP_PATH || "yt-dlp";
 
 function isUrl(value) {
@@ -38,8 +37,6 @@ export async function downloadYouTubeAudio(url) {
       "5",
       "--extractor-args",
       "youtube:player_client=web_safari,android",
-      "--max-filesize",
-      `${MAX_AUDIO_SIZE}`,
       "--output",
       outputPath,
       url,
@@ -70,12 +67,6 @@ export async function downloadYouTubeAudio(url) {
       { maxBuffer: 1024 * 1024 },
     );
 
-    const stats = await fs.promises.stat(outputPath);
-
-    if (stats.size > MAX_AUDIO_SIZE) {
-      throw new Error("FILE_TOO_LARGE");
-    }
-
     return { outputPath };
   } catch (error) {
     await fs.promises.unlink(outputPath).catch(() => {});
@@ -89,10 +80,6 @@ export async function downloadYouTubeAudio(url) {
       throw new Error("AUDIO_FORMAT_NOT_FOUND");
     }
 
-    if (/max-filesize|file is larger|exceeds the maximum/i.test(details)) {
-      throw new Error("FILE_TOO_LARGE");
-    }
-
     if (
       /sign in|not a bot|confirm you.re not a bot|login required|authentication|po token/i.test(
         details,
@@ -104,5 +91,3 @@ export async function downloadYouTubeAudio(url) {
     throw error;
   }
 }
-
-export { MAX_AUDIO_SIZE };
