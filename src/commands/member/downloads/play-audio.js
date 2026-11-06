@@ -1,6 +1,7 @@
 import { PREFIX } from "../../../config.js";
 import { InvalidParameterError } from "../../../errors/index.js";
 import fs from "node:fs";
+import path from "node:path";
 import {
   downloadYouTubeAudio,
   resolveYouTubeUrl,
@@ -52,6 +53,12 @@ export default {
     } finally {
       if (outputPath) {
         await fs.promises.unlink(outputPath).catch(() => {});
+      }
+      if (outputPath) {
+        await fs.promises.rm(path.dirname(outputPath), {
+          recursive: true,
+          force: true,
+        });
       }
     }
   },
