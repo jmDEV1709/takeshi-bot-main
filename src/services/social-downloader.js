@@ -96,7 +96,11 @@ async function downloadWithYtDlp(url) {
     url,
   ];
   const cookiesFile = await findCookiesFile();
-  if (cookiesFile) args.unshift("--cookies", cookiesFile);
+  if (cookiesFile) {
+    const writableCookieFile = `${outputBase}.cookies.txt`;
+    await fs.promises.copyFile(cookiesFile, writableCookieFile);
+    args.unshift("--cookies", writableCookieFile);
+  }
 
   try {
     await execFileAsync(process.env.YTDLP_PATH || "yt-dlp", args, {

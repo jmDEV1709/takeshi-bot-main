@@ -53,7 +53,9 @@ export async function downloadYouTubeAudio(url) {
       try {
         const cookieStats = await fs.promises.stat(cookieFile);
         if (cookieStats.isFile() && cookieStats.size > 0) {
-          ytDlpArgs.splice(0, 0, "--cookies", cookieFile);
+          const writableCookieFile = path.join(outputDir, "cookies.txt");
+          await fs.promises.copyFile(cookieFile, writableCookieFile);
+          ytDlpArgs.splice(0, 0, "--cookies", writableCookieFile);
           break;
         }
       } catch (error) {
