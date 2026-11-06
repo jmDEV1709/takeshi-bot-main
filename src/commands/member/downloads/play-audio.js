@@ -39,8 +39,6 @@ export default {
     } catch (error) {
       if (error.message === "SEARCH_NO_RESULTS") {
         await sendErrorReply("Não encontrei resultados para essa busca no YouTube.");
-      } else if (error.message === "FILE_TOO_LARGE") {
-        await sendErrorReply("O áudio ultrapassa o limite de 25 MB do bot.");
       } else if (error.message === "AUDIO_FORMAT_NOT_FOUND") {
         await sendErrorReply("Não encontrei um formato de áudio compatível para esse vídeo.");
       } else if (error.message === "YOUTUBE_AUTH_REQUIRED") {
