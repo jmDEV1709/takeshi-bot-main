@@ -45,7 +45,7 @@ export default {
         await sendErrorReply("Não encontrei um formato de áudio compatível para esse vídeo.");
       } else if (error.message === "YOUTUBE_AUTH_REQUIRED") {
         await sendErrorReply(
-          "O YouTube bloqueou este download por exigir verificação ou login. Tente outro vídeo público.",
+          "O YouTube bloqueou este download. O cookie pode estar expirado ou o IP da VM foi marcado para verificação. Renove o cookies.txt, copie-o para a VM e reinicie o container; se continuar, tente outro vídeo público.",
         );
       } else {
         console.error("Erro no comando play:", error);

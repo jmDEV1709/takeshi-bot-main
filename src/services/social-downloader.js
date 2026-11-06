@@ -3,7 +3,7 @@ import { tiktokdl } from "@bochilteam/scraper-tiktok";
 import { instagramdl } from "@bochilteam/scraper-instagram";
 import { twitter } from "@bochilteam/scraper-twitter";
 
-const MAX_VIDEO_SIZE = 50 * 1024 * 1024;
+const MAX_VIDEO_SIZE = 64 * 1024 * 1024;
 const DOWNLOAD_TIMEOUT = 120000;
 
 function validateUrl(rawUrl, platform) {
@@ -92,7 +92,7 @@ export function socialDownloadError(error, platformName) {
   if (error.message === "INVALID_URL") return "O link enviado não é válido.";
   if (error.message === "WRONG_PLATFORM") return `Esse link não pertence ao ${platformName}.`;
   if (error.message === "VIDEO_NOT_FOUND") return `Não encontrei vídeo disponível no ${platformName}.`;
-  if (error.message === "FILE_TOO_LARGE") return "O vídeo ultrapassa o limite de 50 MB.";
+  if (error.message === "FILE_TOO_LARGE") return "O vídeo ultrapassa o limite de 64 MB.";
   if (error.code === "ECONNABORTED") return "O download demorou demais e foi cancelado.";
   return `Não consegui baixar o vídeo do ${platformName}. Tente novamente.`;
 }
