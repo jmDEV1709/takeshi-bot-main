@@ -20,7 +20,9 @@ export default {
     sendSuccessReact,
     sendErrorReply,
   }) => {
-    if (!fullArgs.length) {
+    const url = fullArgs.trim();
+
+    if (!url) {
       throw new InvalidParameterError(
         "Você precisa enviar uma URL do Instagram!"
       );
@@ -29,10 +31,10 @@ export default {
     await sendWaitReact();
 
     try {
-      if (!fullArgs[0].includes("instagram.com")) {
+      if (!url.includes("instagram.com")) {
         throw new WarningError("O link não é do Instagram!");
       }
-      const video = await downloadSocialVideo(fullArgs[0], "instagram");
+      const video = await downloadSocialVideo(url, "instagram");
       await sendSuccessReact();
       await sendVideoFromBuffer(video, "Vídeo baixado do Instagram");
     } catch (error) {

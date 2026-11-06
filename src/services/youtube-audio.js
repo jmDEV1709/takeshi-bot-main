@@ -2,14 +2,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import ytSearch from "yt-search";
 import { TEMP_DIR } from "../config.js";
 import { getRandomName } from "../utils/index.js";
 
 const execFileAsync = promisify(execFile);
 const MAX_AUDIO_SIZE = 25 * 1024 * 1024;
-const COOKIES_FILE =
-  process.env.YTDLP_COOKIES_FILE || "/app/cookies/cookies.txt";
+const YTDLP_BIN = process.env.YTDLP_PATH || "yt-dlp";
 
 function isUrl(value) {
   return /^https?:\/\//i.test(value);
@@ -20,14 +18,7 @@ export async function resolveYouTubeUrl(query) {
     return query;
   }
 
-  const result = await ytSearch(query);
-  const firstVideo = result.videos?.[0];
-
-  if (!firstVideo?.url) {
-    throw new Error("SEARCH_NO_RESULTS");
-  }
-
-  return firstVideo.url;
+  return `ytsearch1:${query}`;
 }
 
 export async function downloadYouTubeAudio(url) {
@@ -54,19 +45,27 @@ export async function downloadYouTubeAudio(url) {
       url,
     ];
 
-    try {
-      const cookieStats = await fs.promises.stat(COOKIES_FILE);
-      if (cookieStats.isFile() && cookieStats.size > 0) {
-        ytDlpArgs.splice(0, 0, "--cookies", COOKIES_FILE);
-      }
-    } catch (error) {
-      if (error.code !== "ENOENT" && error.code !== "ENOTDIR") {
-        throw error;
+    const cookieCandidates = [
+      process.env.YTDLP_COOKIES_FILE,
+      path.resolve(TEMP_DIR, "..", "..", "cookies", "cookies.txt"),
+      path.resolve(TEMP_DIR, "..", "..", "cookies.txt"),
+      "/app/cookies/cookies.txt",
+    ].filter(Boolean);
+
+    for (const cookieFile of cookieCandidates) {
+      try {
+        const cookieStats = await fs.promises.stat(cookieFile);
+        if (cookieStats.isFile() && cookieStats.size > 0) {
+          ytDlpArgs.splice(0, 0, "--cookies", cookieFile);
+          break;
+        }
+      } catch (error) {
+        if (error.code !== "ENOENT" && error.code !== "ENOTDIR") throw error;
       }
     }
 
     await execFileAsync(
-      "yt-dlp",
+      YTDLP_BIN,
       ytDlpArgs,
       { maxBuffer: 1024 * 1024 },
     );
@@ -83,6 +82,9 @@ export async function downloadYouTubeAudio(url) {
 
     const details = `${error.message || ""}\n${error.stderr || ""}`;
 
+    if (/no results|video unavailable/i.test(details)) {
+      throw new Error("SEARCH_NO_RESULTS");
+    }
     if (/requested format|audio format|no video formats/i.test(details)) {
       throw new Error("AUDIO_FORMAT_NOT_FOUND");
     }
