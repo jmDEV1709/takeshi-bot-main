@@ -33,8 +33,9 @@ RUN apt-get update \
         libxshmfence1 \
         pkg-config \
         python3 \
-        yt-dlp \
+        python3-pip \
         webp \
+    && python3 -m pip install --no-cache-dir --break-system-packages yt-dlp \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
