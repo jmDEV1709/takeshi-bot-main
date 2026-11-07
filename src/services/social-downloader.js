@@ -12,6 +12,13 @@ import { getRandomName } from "../utils/index.js";
 const DOWNLOAD_TIMEOUT = 120000;
 const execFileAsync = promisify(execFile);
 
+function getYtDlpBinary() {
+  if (process.env.YTDLP_PATH) return process.env.YTDLP_PATH;
+
+  const localBinary = path.resolve(process.cwd(), ".bin", "yt-dlp");
+  return fs.existsSync(localBinary) ? localBinary : "yt-dlp";
+}
+
 function validateUrl(rawUrl, platform) {
   let parsedUrl;
 
@@ -103,7 +110,7 @@ async function downloadWithYtDlp(url) {
   }
 
   try {
-    await execFileAsync(process.env.YTDLP_PATH || "yt-dlp", args, {
+    await execFileAsync(getYtDlpBinary(), args, {
       timeout: DOWNLOAD_TIMEOUT,
       maxBuffer: 1024 * 1024,
     });
@@ -117,6 +124,9 @@ async function downloadWithYtDlp(url) {
     const details = `${error.message || ""}\n${error.stderr || ""}`;
     if (/no video|requested format|unable to download|not found/i.test(details)) {
       throw new Error("VIDEO_NOT_FOUND");
+    }
+    if (error.code === "ENOENT") {
+      throw new Error("YTDLP_NOT_FOUND");
     }
     if (error.code === "ETIMEDOUT" || error.killed) {
       throw new Error("DOWNLOAD_TIMEOUT");
@@ -147,22 +157,38 @@ export async function downloadSocialVideo(url, platform) {
 
   if (!downloadUrl) return downloadWithYtDlp(validUrl);
 
-  const response = await axios({
-    method: "get",
-    url: downloadUrl,
-    responseType: "arraybuffer",
-    timeout: DOWNLOAD_TIMEOUT,
-    maxRedirects: 5,
-    validateStatus: (status) => status >= 200 && status < 300,
-  });
+  try {
+    const response = await axios({
+      method: "get",
+      url: downloadUrl,
+      responseType: "arraybuffer",
+      timeout: DOWNLOAD_TIMEOUT,
+      maxRedirects: 5,
+      validateStatus: (status) => status >= 200 && status < 300,
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/131 Safari/537.36",
+        Accept: "*/*",
+      },
+    });
 
-  return Buffer.from(response.data);
+    return Buffer.from(response.data);
+  } catch (error) {
+    console.warn(
+      `Download direto do ${platform} falhou; tentando yt-dlp:`,
+      error.message,
+    );
+    return downloadWithYtDlp(validUrl);
+  }
 }
 
 export function socialDownloadError(error, platformName) {
   if (error.message === "INVALID_URL") return "O link enviado não é válido.";
   if (error.message === "WRONG_PLATFORM") return `Esse link não pertence ao ${platformName}.`;
   if (error.message === "VIDEO_NOT_FOUND") return `Não encontrei vídeo disponível no ${platformName}.`;
+  if (error.message === "YTDLP_NOT_FOUND") {
+    return "O componente de download não está instalado no servidor. Reconstrua o Docker ou execute o instalador atualizado.";
+  }
   if (error.code === "ETIMEDOUT" || error.code === "ECONNABORTED") {
     return "O download demorou demais e foi cancelado.";
   }
