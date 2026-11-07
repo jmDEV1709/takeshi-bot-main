@@ -6,6 +6,7 @@ const ytSearch = require('yt-search');
 
 const TEMP_MEDIA_DIR = path.join(__dirname, '..', 'media', 'temp');
 const MAX_AUDIO_SIZE = 25 * 1024 * 1024;
+const MAX_DURATION_SECONDS = 30 * 60;
 
 function isUrl(str) {
     return /^https?:\/\//i.test(str);
@@ -46,6 +47,13 @@ function inferMimeType(format) {
 
 async function downloadYouTubeAudio(url, outputPath) {
     const info = await ytdl.getInfo(url);
+    const durationSeconds = Number(
+        info.videoDetails?.lengthSeconds || 0
+    );
+
+    if (durationSeconds > MAX_DURATION_SECONDS) {
+        throw new Error('DURATION_TOO_LONG');
+    }
 
     const preferredFormat = ytdl.chooseFormat(info.formats, {
         quality: 'highestaudio',
@@ -160,6 +168,10 @@ module.exports = async function play({ args, sock, message }) {
 
         if (error.message === 'FILE_TOO_LARGE') {
             return '❌ O áudio ultrapassa o limite de 25 MB do bot.';
+        }
+
+        if (error.message === 'DURATION_TOO_LONG') {
+            return '❌ O vídeo ultrapassa o limite máximo de 30 minutos.';
         }
 
         if (error.message === 'AUDIO_FORMAT_NOT_FOUND') {
