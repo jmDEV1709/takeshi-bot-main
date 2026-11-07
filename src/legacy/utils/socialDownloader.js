@@ -2,14 +2,26 @@ const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
 const { pipeline } = require('stream/promises');
+const { execFile } = require('child_process');
+const { promisify } = require('util');
 const { tiktokdl } = require('@bochilteam/scraper-tiktok');
 const { instagramdl } = require('@bochilteam/scraper-instagram');
 
 const DOWNLOAD_TIMEOUT = 120000;
 const TEMP_MEDIA_DIR = path.join(__dirname, '..', 'media', 'temp');
+const execFileAsync = promisify(execFile);
 
 // Impede vários downloads simultâneos no mesmo grupo
 const activeDownloads = new Set();
+
+function getYtDlpBinary() {
+    if (process.env.YTDLP_PATH) {
+        return process.env.YTDLP_PATH;
+    }
+
+    const localBinary = path.resolve(process.cwd(), '.bin', 'yt-dlp');
+    return fs.existsSync(localBinary) ? localBinary : 'yt-dlp';
+}
 
 function isAllowedDomain(hostname, platform) {
     const host = hostname
@@ -104,6 +116,39 @@ async function downloadVideoToFile(downloadUrl, outputPath) {
     );
 }
 
+async function downloadWithYtDlp(url) {
+    await ensureTempDir();
+
+    const outputPath = path.join(
+        TEMP_MEDIA_DIR,
+        `social-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.mp4`
+    );
+
+    try {
+        await execFileAsync(
+            getYtDlpBinary(),
+            [
+                '--no-playlist',
+                '--no-warnings',
+                '--no-progress',
+                '-f',
+                'best[ext=mp4]/best',
+                '-o',
+                outputPath,
+                url
+            ],
+            {
+                timeout: DOWNLOAD_TIMEOUT,
+                maxBuffer: 1024 * 1024
+            }
+        );
+
+        return await fs.promises.readFile(outputPath);
+    } finally {
+        await fs.promises.unlink(outputPath).catch(() => {});
+    }
+}
+
 function friendlyError(error, platformName) {
     if (error?.message === 'INVALID_URL') {
         return '❌ O link enviado não é válido.';
@@ -178,10 +223,16 @@ async function downloadSocialVideo({
             platform
         );
 
-        await downloadVideoToFile(
-            downloadUrl,
-            temporaryFilePath
-        );
+        try {
+            await downloadVideoToFile(downloadUrl, temporaryFilePath);
+        } catch (error) {
+            console.warn(
+                `Download direto do ${platformName} falhou; tentando yt-dlp:`,
+                error.message
+            );
+            const videoBuffer = await downloadWithYtDlp(validUrl);
+            await fs.promises.writeFile(temporaryFilePath, videoBuffer);
+        }
 
         await sock.sendMessage(
             remoteJid,
