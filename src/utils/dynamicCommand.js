@@ -4,7 +4,7 @@
  *
  * @author Dev Gui
  */
-import { BOT_EMOJI, ONLY_GROUP_ID } from "../config.js";
+import { BOT_EMOJI, LEGACY_PREFIX, ONLY_GROUP_ID } from "../config.js";
 import {
   DangerError,
   InvalidParameterError,
@@ -31,6 +31,7 @@ import {
 } from "./database.js";
 import { findCommandImport } from "./index.js";
 import { errorLog } from "./logger.js";
+import { executeLegacyCommand } from "./legacyBridge.js";
 
 /**
  * @param {CommandHandleProps} paramsHandler
@@ -50,6 +51,17 @@ export async function dynamicCommand(paramsHandler, startProcess) {
     userLid,
     webMessage,
   } = paramsHandler;
+
+  if (prefix === LEGACY_PREFIX) {
+    await executeLegacyCommand({
+      commandName,
+      args: paramsHandler.args,
+      socket,
+      webMessage,
+      sendReply,
+    });
+    return;
+  }
 
   const activeGroup = isActiveGroup(remoteJid);
 

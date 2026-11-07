@@ -74,6 +74,17 @@ Este projeto não possui qualquer vínculo oficial com o WhatsApp. Ele foi desen
 
 Não nos responsabilizamos por qualquer uso indevido deste bot. É de responsabilidade exclusiva do usuário garantir que sua utilização esteja em conformidade com os termos de uso do WhatsApp e a legislação vigente.
 
+## Prefixos dos comandos
+
+Os dois bots foram fundidos em uma única conexão:
+
+- `/comando`: usa os comandos nativos do Takeshi.
+- `,comando`: usa os comandos importados do `jmDEV1709/chatbot`.
+
+Exemplos: `/menu`, `/ping`, `,menu`, `,ia explique o que é Node.js`.
+
+Os comandos com vírgula continuam usando a configuração `GROQ_API_KEY` e `GROQ_MODEL` do bot antigo quando o comando `,ia` for utilizado.
+
 ## Instalação no Termux (novo vídeo tutorial: [https://youtu.be/-yjn1Xe3ltg](https://youtu.be/-yjn1Xe3ltg))
 
 1 - Abra o Termux e execute os comandos abaixo.

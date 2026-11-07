@@ -6,6 +6,7 @@ const __dirname = path.dirname(__filename);
 
 // Prefixo padrão dos comandos.
 export const PREFIX = "/";
+export const LEGACY_PREFIX = ",";
 
 // Emoji do bot (mude se preferir).
 export const BOT_EMOJI = "🤖";
