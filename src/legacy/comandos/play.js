@@ -5,7 +5,9 @@ const { promisify } = require('util');
 
 const TEMP_MEDIA_DIR = path.join(__dirname, '..', 'media', 'temp');
 const MAX_AUDIO_SIZE = 25 * 1024 * 1024;
-const MAX_DURATION_SECONDS = 30 * 60;
+const PLAY_COOLDOWN_MS = 2 * 60 * 1000;
+const activeDownloads = new Set();
+const cooldowns = new Map();
 const execFileAsync = promisify(execFile);
 
 function isUrl(str) {
@@ -17,7 +19,7 @@ async function resolveYouTubeUrl(query) {
         return query;
     }
 
-    return `ytsearch5:${query}`;
+    return `ytsearch1:${query}`;
 }
 
 function getYtDlpBinary() {
@@ -66,7 +68,6 @@ async function downloadYouTubeAudio(url) {
         '--audio-format', 'mp3',
         '--audio-quality', '0',
         '--max-filesize', `${MAX_AUDIO_SIZE}`,
-        '--match-filter', `duration <= ${MAX_DURATION_SECONDS}`,
         '--output', outputTemplate,
         url
     ];
@@ -98,9 +99,6 @@ async function downloadYouTubeAudio(url) {
         if (/no results|video unavailable/i.test(details)) {
             throw new Error('SEARCH_NO_RESULTS');
         }
-        if (/duration.*(?:exceed|longer|greater|maximum)|video is longer than|match filter/i.test(details)) {
-            throw new Error('DURATION_TOO_LONG');
-        }
         if (/max-filesize|file is larger|file size/i.test(details)) {
             throw new Error('FILE_TOO_LARGE');
         }
@@ -120,12 +118,30 @@ async function downloadYouTubeAudio(url) {
 
 module.exports = async function play({ args, sock, message }) {
     const remoteJid = message.key.remoteJid;
+    const userId =
+        message.key.participant ||
+        message.key.participantAlt ||
+        remoteJid;
+    const requestKey = userId;
     const query = args.join(' ').trim();
 
     if (!query) {
         return '❗ Uso: ,play <nome da música ou link do YouTube>';
     }
 
+    const cooldownUntil = cooldowns.get(requestKey) || 0;
+    if (cooldownUntil <= Date.now()) {
+        cooldowns.delete(requestKey);
+    }
+    if (activeDownloads.has(requestKey)) {
+        return '⏳ Você já tem um áudio sendo baixado. Aguarde terminar antes de pedir outro.';
+    }
+    if (cooldownUntil > Date.now()) {
+        const remainingSeconds = Math.ceil((cooldownUntil - Date.now()) / 1000);
+        return `⏳ Aguarde ${remainingSeconds} segundos para solicitar outro áudio.`;
+    }
+
+    activeDownloads.add(requestKey);
     let download;
 
     try {
@@ -163,10 +179,6 @@ module.exports = async function play({ args, sock, message }) {
             return '❌ O áudio ultrapassa o limite de 25 MB do bot.';
         }
 
-        if (error.message === 'DURATION_TOO_LONG') {
-            return '❌ O vídeo ultrapassa o limite máximo de 30 minutos.';
-        }
-
         if (error.message === 'AUDIO_FORMAT_NOT_FOUND') {
             return '❌ Não encontrei um formato de áudio compatível para esse vídeo.';
         }
@@ -179,6 +191,8 @@ module.exports = async function play({ args, sock, message }) {
 
         return '❌ Não consegui baixar o áudio agora. Tente outro link ou outra música.';
     } finally {
+        activeDownloads.delete(requestKey);
+        cooldowns.set(requestKey, Date.now() + PLAY_COOLDOWN_MS);
         if (download?.outputDir) {
             await fs.promises.rm(download.outputDir, {
                 recursive: true,
