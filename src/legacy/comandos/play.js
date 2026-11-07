@@ -17,7 +17,7 @@ async function resolveYouTubeUrl(query) {
         return query;
     }
 
-    return `ytsearch1:${query}`;
+    return `ytsearch5:${query}`;
 }
 
 function getYtDlpBinary() {
@@ -61,6 +61,7 @@ async function downloadYouTubeAudio(url) {
         '--no-playlist',
         '--no-warnings',
         '--no-progress',
+        '--max-downloads', '1',
         '--extract-audio',
         '--audio-format', 'mp3',
         '--audio-quality', '0',
@@ -94,13 +95,14 @@ async function downloadYouTubeAudio(url) {
     } catch (error) {
         const details = `${error.message || ''}\n${error.stderr || ''}`;
 
-        if (/duration|max-filesize|file is larger/i.test(details)) {
-            throw new Error(/duration/i.test(details)
-                ? 'DURATION_TOO_LONG'
-                : 'FILE_TOO_LARGE');
-        }
         if (/no results|video unavailable/i.test(details)) {
             throw new Error('SEARCH_NO_RESULTS');
+        }
+        if (/duration.*(?:exceed|longer|greater|maximum)|video is longer than|match filter/i.test(details)) {
+            throw new Error('DURATION_TOO_LONG');
+        }
+        if (/max-filesize|file is larger|file size/i.test(details)) {
+            throw new Error('FILE_TOO_LARGE');
         }
         if (/sign in|not a bot|confirm you.re not a bot|login required|authentication|po token/i.test(details)) {
             throw new Error('YOUTUBE_AUTH_REQUIRED');
