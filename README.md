@@ -481,6 +481,9 @@ O `play` usa `yt-dlp` e o Docker já instala o executável. Para vídeos do YouT
 exigem verificação, coloque um arquivo Netscape de cookies em `cookies/cookies.txt`;
 essa pasta é ignorada pelo Git e montada somente como leitura no container.
 
+No Pterodactyl, execute novamente o script de instalação do egg após atualizar o bot;
+ele instala o binário em `.bin/yt-dlp`, usado pelo comando `,play`.
+
 Se você exportou cookies em JSON, converta-os antes de iniciar o Docker:
 
 ```bash
