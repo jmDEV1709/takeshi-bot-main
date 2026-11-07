@@ -64,7 +64,7 @@ module.exports = () => `
 │ 🎨 ,imagem <descrição>
 │ 🖼️ ,sticker → preenche o quadro
 │ 🔳 ,sticker full → imagem inteira
-│ 🎵 ,play <música>
+│ 🎵 ,play <música> (máx. 30 min)
 │ 📸 ,insta <link>
 │ 🎬 ,tk <link>
 │
