@@ -5,7 +5,6 @@ const { pipeline } = require('stream/promises');
 const { tiktokdl } = require('@bochilteam/scraper-tiktok');
 const { instagramdl } = require('@bochilteam/scraper-instagram');
 
-const MAX_FILE_SIZE = 50 * 1024 * 1024;
 const DOWNLOAD_TIMEOUT = 120000;
 const TEMP_MEDIA_DIR = path.join(__dirname, '..', 'media', 'temp');
 
@@ -99,24 +98,6 @@ async function downloadVideoToFile(downloadUrl, outputPath) {
         validateStatus: (status) => status >= 200 && status < 300
     });
 
-    const contentLength = Number(
-        response.headers['content-length'] || 0
-    );
-
-    if (contentLength && contentLength > MAX_FILE_SIZE) {
-        throw new Error('FILE_TOO_LARGE');
-    }
-
-    let downloadedBytes = 0;
-
-    response.data.on('data', (chunk) => {
-        downloadedBytes += chunk.length;
-
-        if (downloadedBytes > MAX_FILE_SIZE) {
-            response.data.destroy(new Error('FILE_TOO_LARGE'));
-        }
-    });
-
     await pipeline(
         response.data,
         fs.createWriteStream(outputPath)
@@ -136,10 +117,6 @@ function friendlyError(error, platformName) {
         return (
             `❌ Não encontrei vídeo disponível no ${platformName}.`
         );
-    }
-
-    if (error?.message === 'FILE_TOO_LARGE') {
-        return '❌ O vídeo ultrapassa o limite de 50 MB.';
     }
 
     if (error?.code === 'ECONNABORTED') {
