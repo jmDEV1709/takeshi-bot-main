@@ -31,7 +31,10 @@ import {
 } from "./database.js";
 import { findCommandImport } from "./index.js";
 import { errorLog } from "./logger.js";
-import { executeLegacyCommand } from "./legacyBridge.js";
+import {
+  executeLegacyCommand,
+  MODERN_MEDIA_COMMANDS,
+} from "./legacyBridge.js";
 
 /**
  * @param {CommandHandleProps} paramsHandler
@@ -52,7 +55,9 @@ export async function dynamicCommand(paramsHandler, startProcess) {
     webMessage,
   } = paramsHandler;
 
-  if (prefix === LEGACY_PREFIX) {
+  const isModernMediaCommand = MODERN_MEDIA_COMMANDS.has(commandName);
+
+  if (prefix === LEGACY_PREFIX && !isModernMediaCommand) {
     await executeLegacyCommand({
       commandName,
       args: paramsHandler.args,
@@ -99,6 +104,8 @@ export async function dynamicCommand(paramsHandler, startProcess) {
   }
 
   const { type, command } = await findCommandImport(commandName);
+  const prefixIsValid =
+    isModernMediaCommand || verifyPrefix(prefix, remoteJid);
 
   if (ONLY_GROUP_ID && ONLY_GROUP_ID !== remoteJid) {
     return;
@@ -106,7 +113,7 @@ export async function dynamicCommand(paramsHandler, startProcess) {
 
   if (activeGroup) {
     if (
-      !verifyPrefix(prefix, remoteJid) ||
+      !prefixIsValid ||
       !hasTypeAndCommand({ type, command })
     ) {
       if (isActiveAutoResponderGroup(remoteJid)) {
@@ -148,7 +155,7 @@ export async function dynamicCommand(paramsHandler, startProcess) {
 
   if (!isBotOwner({ userLid }) && !activeGroup) {
     if (
-      verifyPrefix(prefix, remoteJid) &&
+      prefixIsValid &&
       hasTypeAndCommand({ type, command })
     ) {
       if (command.name !== "on") {
@@ -169,7 +176,7 @@ export async function dynamicCommand(paramsHandler, startProcess) {
     }
   }
 
-  if (!verifyPrefix(prefix, remoteJid)) {
+  if (!prefixIsValid) {
     return;
   }
 

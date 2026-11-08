@@ -1,7 +1,10 @@
 import { PREFIX } from "../../../config.js";
-import { InvalidParameterError, WarningError } from "../../../errors/index.js";
-import { download } from "../../../services/spider-x-api.js";
-import { errorLog } from "../../../utils/logger.js";
+import { InvalidParameterError } from "../../../errors/index.js";
+import fs from "node:fs";
+import {
+  downloadYouTubeVideo,
+  resolveYouTubeUrl,
+} from "../../../services/youtube-audio.js";
 
 export default {
   name: "yt-mp4",
@@ -12,11 +15,9 @@ export default {
    * @param {CommandHandleProps} props
    */
   handle: async ({
-    sendVideoFromURL,
-    sendImageFromURL,
+    sendVideoFromBuffer,
     fullArgs,
     sendWaitReact,
-    sendSuccessReact,
     sendErrorReply,
   }) => {
     if (!fullArgs.length) {
@@ -27,33 +28,36 @@ export default {
 
     await sendWaitReact();
 
-    if (!fullArgs.includes("you")) {
-      throw new WarningError("O link não é do YouTube!");
-    }
+    let download;
 
     try {
-      const data = await download("yt-mp4", fullArgs);
-
-      if (!data) {
-        await sendErrorReply("Nenhum resultado encontrado!");
-        return;
-      }
-
-      await sendSuccessReact();
-
-      await sendImageFromURL(
-        data.thumbnail,
-        `*Título*: ${data.title}
-        
-*Descrição*: ${data.description}
-*Duração em segundos*: ${data.total_duration_in_seconds}
-*Canal*: ${data.channel.name}`
+      download = await downloadYouTubeVideo(
+        await resolveYouTubeUrl(fullArgs),
       );
-
-      await sendVideoFromURL(data.url);
+      await sendVideoFromBuffer(
+        await fs.promises.readFile(download.outputPath),
+      );
     } catch (error) {
-      errorLog(JSON.stringify(error, null, 2));
-      await sendErrorReply(error.message);
+      const messages = {
+        SEARCH_NO_RESULTS: "Nenhum resultado encontrado!",
+        VIDEO_FORMAT_NOT_FOUND:
+          "Não encontrei um formato de vídeo compatível para esse vídeo.",
+        YOUTUBE_AUTH_REQUIRED:
+          "O YouTube bloqueou este download. Renove o cookies.txt ou tente outro vídeo público.",
+        YTDLP_NOT_FOUND:
+          "O componente de download não está instalado no servidor.",
+      };
+      await sendErrorReply(
+        messages[error.message] ||
+          "Não consegui baixar o vídeo agora. Tente outro link ou outro vídeo.",
+      );
+    } finally {
+      if (download?.outputDir) {
+        await fs.promises.rm(download.outputDir, {
+          recursive: true,
+          force: true,
+        });
+      }
     }
   },
 };

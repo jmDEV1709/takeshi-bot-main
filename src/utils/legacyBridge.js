@@ -71,6 +71,24 @@ const commandModules = {
   limpar: "limpar",
 };
 
+export const MODERN_MEDIA_COMMANDS = new Set([
+  "play",
+  "playaudio",
+  "pa",
+  "playvideo",
+  "pv",
+  "ytmp3",
+  "youtubemp3",
+  "ytaudio",
+  "youtubeaudio",
+  "mp3",
+  "ytmp4",
+  "youtubemp4",
+  "ytvideo",
+  "youtubevideo",
+  "mp4",
+]);
+
 const handlers = new Map();
 
 function getHandler(commandName) {
