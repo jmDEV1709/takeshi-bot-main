@@ -88,6 +88,7 @@ export function menuMessage(groupJid) {
 ▢ • ${prefix}gerar-link
 ▢ • ${prefix}info
 ▢ • ${prefix}meu-lid
+▢ • ${prefix}numerologia
 ▢ • ${prefix}perfil
 ▢ • ${prefix}ping
 ▢ • ${prefix}raw-message
