@@ -16,7 +16,9 @@ export default {
    * @param {CommandHandleProps} props
    */
   handle: async ({
-    sendAudioFromBuffer,
+    socket,
+    remoteJid,
+    webMessage,
     fullArgs,
     sendWaitReact,
     sendErrorReply,
@@ -36,7 +38,15 @@ export default {
       const download = await downloadYouTubeAudio(youtubeUrl);
       outputPath = download.outputPath;
 
-      await sendAudioFromBuffer(await fs.promises.readFile(outputPath));
+      await socket.sendMessage(
+        remoteJid,
+        {
+          audio: await fs.promises.readFile(outputPath),
+          mimetype: "audio/mpeg",
+          ptt: false,
+        },
+        { quoted: webMessage },
+      );
     } catch (error) {
       if (error.message === "SEARCH_NO_RESULTS") {
         await sendErrorReply("Não encontrei resultados para essa busca no YouTube.");

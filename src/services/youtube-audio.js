@@ -5,6 +5,7 @@ import { promisify } from "node:util";
 import { TEMP_DIR } from "../config.js";
 
 const execFileAsync = promisify(execFile);
+const YOUTUBE_PLAYER_CLIENTS = ["web_safari", "mweb", "android_vr"];
 
 function isUrl(value) {
   return /^https?:\/\//i.test(value);
@@ -23,8 +24,22 @@ function getYtDlpBinary() {
     return process.env.YTDLP_PATH;
   }
 
-  const localBinary = path.resolve(process.cwd(), ".bin", "yt-dlp");
-  return fs.existsSync(localBinary) ? localBinary : "yt-dlp";
+  const candidates = [
+    path.resolve(process.cwd(), ".bin", "yt-dlp"),
+    "/usr/local/bin/yt-dlp",
+    "/usr/bin/yt-dlp",
+  ];
+
+  return candidates.find((candidate) => fs.existsSync(candidate)) || "yt-dlp";
+}
+
+function getFfmpegLocation() {
+  if (process.env.FFMPEG_PATH) {
+    return process.env.FFMPEG_PATH;
+  }
+
+  const candidates = ["/usr/local/bin/ffmpeg", "/usr/bin/ffmpeg"];
+  return candidates.find((candidate) => fs.existsSync(candidate));
 }
 
 function findCookiesFile() {
@@ -92,6 +107,7 @@ async function downloadYouTubeMedia(url, mediaType) {
     "--no-playlist",
     "--no-warnings",
     "--no-progress",
+    "--restrict-filenames",
     "--max-downloads",
     "1",
     "--output",
@@ -115,6 +131,11 @@ async function downloadYouTubeMedia(url, mediaType) {
     );
   }
 
+  const ffmpegLocation = getFfmpegLocation();
+  if (ffmpegLocation) {
+    ytDlpArgs.push("--ffmpeg-location", ffmpegLocation);
+  }
+
   const cookiesFile = findCookiesFile();
   if (cookiesFile) {
     ytDlpArgs.unshift("--cookies", cookiesFile);
@@ -122,25 +143,68 @@ async function downloadYouTubeMedia(url, mediaType) {
 
   ytDlpArgs.push(url);
 
-  try {
-    await execFileAsync(
-      getYtDlpBinary(),
-      ytDlpArgs,
-      { maxBuffer: 1024 * 1024 },
-    );
+  let lastError;
 
-    const expectedExtensions =
-      mediaType === "audio" ? [".mp3"] : [".mp4", ".mkv", ".webm"];
-    const files = (await fs.promises.readdir(outputDir)).filter((file) =>
-      expectedExtensions.some((extension) => file.endsWith(extension)),
-    );
-    if (!files.length) {
-      throw new Error(
-        mediaType === "audio" ? "AUDIO_NOT_FOUND" : "VIDEO_NOT_FOUND",
-      );
+  try {
+    for (const playerClient of YOUTUBE_PLAYER_CLIENTS) {
+      try {
+        await execFileAsync(
+          getYtDlpBinary(),
+          [
+            ...ytDlpArgs.slice(0, -1),
+            "--extractor-args",
+            `youtube:player_client=${playerClient}`,
+            ytDlpArgs.at(-1),
+          ],
+          { maxBuffer: 1024 * 1024 },
+        );
+
+        const expectedExtensions =
+          mediaType === "audio" ? [".mp3"] : [".mp4", ".mkv", ".webm"];
+        const files = (await fs.promises.readdir(outputDir)).filter((file) =>
+          expectedExtensions.some((extension) => file.endsWith(extension)),
+        );
+        if (files.length) {
+          return { outputPath: path.join(outputDir, files[0]), outputDir };
+        }
+      } catch (error) {
+        lastError = error;
+        const expectedExtensions =
+          mediaType === "audio" ? [".mp3"] : [".mp4", ".mkv", ".webm"];
+        const completedFiles = (await fs.promises.readdir(outputDir)).filter(
+          (file) =>
+            expectedExtensions.some((extension) => file.endsWith(extension)),
+        );
+        if (completedFiles.length) {
+          return {
+            outputPath: path.join(outputDir, completedFiles[0]),
+            outputDir,
+          };
+        }
+
+        const details = `${error.message || ""}\n${error.stderr || ""}`;
+        if (/enoent|yt-dlp/i.test(error.code || "") || error.code === "ENOENT") {
+          break;
+        }
+        if (/sign in|not a bot|login required|authentication/i.test(details)) {
+          break;
+        }
+        const partialFiles = await fs.promises.readdir(outputDir);
+        await Promise.all(
+          partialFiles.map((file) =>
+            fs.promises.rm(path.join(outputDir, file), { force: true }),
+          ),
+        );
+      }
     }
 
-    return { outputPath: path.join(outputDir, files[0]), outputDir };
+    if (lastError) {
+      throw lastError;
+    }
+
+    throw new Error(
+      mediaType === "audio" ? "AUDIO_NOT_FOUND" : "VIDEO_NOT_FOUND",
+    );
   } catch (error) {
     await fs.promises.rm(outputDir, { recursive: true, force: true });
     throw getDownloadError(error, mediaType);

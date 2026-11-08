@@ -15,7 +15,9 @@ export default {
    * @param {CommandHandleProps} props
    */
   handle: async ({
-    sendAudioFromBuffer,
+    socket,
+    remoteJid,
+    webMessage,
     fullArgs,
     sendWaitReact,
     sendErrorReply,
@@ -34,8 +36,14 @@ export default {
       download = await downloadYouTubeAudio(
         await resolveYouTubeUrl(fullArgs),
       );
-      await sendAudioFromBuffer(
-        await fs.promises.readFile(download.outputPath),
+      await socket.sendMessage(
+        remoteJid,
+        {
+          audio: await fs.promises.readFile(download.outputPath),
+          mimetype: "audio/mpeg",
+          ptt: false,
+        },
+        { quoted: webMessage },
       );
     } catch (error) {
       const messages = {
