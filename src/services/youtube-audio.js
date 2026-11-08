@@ -138,7 +138,9 @@ async function downloadYouTubeMedia(url, mediaType) {
 
   const cookiesFile = findCookiesFile();
   if (cookiesFile) {
-    ytDlpArgs.unshift("--cookies", cookiesFile);
+    const writableCookieFile = path.join(outputDir, "cookies.txt");
+    await fs.promises.copyFile(cookiesFile, writableCookieFile);
+    ytDlpArgs.unshift("--cookies", writableCookieFile);
   }
 
   ytDlpArgs.push(url);
@@ -191,9 +193,11 @@ async function downloadYouTubeMedia(url, mediaType) {
         }
         const partialFiles = await fs.promises.readdir(outputDir);
         await Promise.all(
-          partialFiles.map((file) =>
+          partialFiles
+            .filter((file) => file !== "cookies.txt")
+            .map((file) =>
             fs.promises.rm(path.join(outputDir, file), { force: true }),
-          ),
+            ),
         );
       }
     }
