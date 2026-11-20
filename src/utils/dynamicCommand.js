@@ -56,8 +56,18 @@ export async function dynamicCommand(paramsHandler, startProcess) {
   } = paramsHandler;
 
   const isModernMediaCommand = MODERN_MEDIA_COMMANDS.has(commandName);
+  let commandLookup = null;
 
   if (prefix === LEGACY_PREFIX && !isModernMediaCommand) {
+    commandLookup = await findCommandImport(commandName);
+  }
+
+  const isModernLegacyCommand =
+    prefix === LEGACY_PREFIX &&
+    commandLookup?.command &&
+    !isModernMediaCommand;
+
+  if (prefix === LEGACY_PREFIX && !isModernMediaCommand && !isModernLegacyCommand) {
     await executeLegacyCommand({
       commandName,
       args: paramsHandler.args,
@@ -103,9 +113,12 @@ export async function dynamicCommand(paramsHandler, startProcess) {
     }
   }
 
-  const { type, command } = await findCommandImport(commandName);
+  const { type, command } =
+    commandLookup ?? (await findCommandImport(commandName));
   const prefixIsValid =
-    isModernMediaCommand || verifyPrefix(prefix, remoteJid);
+    isModernMediaCommand ||
+    isModernLegacyCommand ||
+    verifyPrefix(prefix, remoteJid);
 
   if (ONLY_GROUP_ID && ONLY_GROUP_ID !== remoteJid) {
     return;
