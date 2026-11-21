@@ -13,7 +13,7 @@
     "Nodejs 24": "ghcr.io/parkervcp/yolks:nodejs_24"
   },
   "file_denylist": [],
-  "startup": "git pull && npm install && npm start",
+  "startup": "mkdir -p .bin && curl -fsSL https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o .bin/yt-dlp && chmod +x .bin/yt-dlp && git pull && npm install && npm start",
   "config": {
     "files": "{}",
     "startup": "{\r\n    \"done\": \"Conectado com sucesso\"\r\n}",

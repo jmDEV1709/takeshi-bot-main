@@ -56,6 +56,14 @@ export default {
         await sendErrorReply(
           "O YouTube bloqueou este download. O cookie pode estar expirado ou o IP da VM foi marcado para verificação. Renove o cookies.txt, copie-o para a VM e reinicie o container; se continuar, tente outro vídeo público.",
         );
+      } else if (error.message === "YTDLP_NOT_FOUND") {
+        await sendErrorReply(
+          "O yt-dlp não está instalado ou não pode ser executado no servidor.",
+        );
+      } else if (error.message === "YTDLP_TIMEOUT") {
+        await sendErrorReply(
+          "A hospedagem demorou demais para baixar o áudio. Tente novamente.",
+        );
       } else {
         console.error("Erro no comando play:", error);
         await sendErrorReply("Não consegui baixar o áudio agora. Tente outro link ou outra música.");

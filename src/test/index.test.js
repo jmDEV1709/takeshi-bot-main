@@ -315,6 +315,40 @@ describe("Utility Functions", () => {
       const content = utils.getContent(webMessage, "sticker");
       assert.strictEqual(content, stickerData);
     });
+
+    it("should unwrap viewOnceMessageV2Extension", () => {
+      const imageData = { url: "view-once.jpg", mimeType: "image/jpeg" };
+      const webMessage = {
+        message: {
+          viewOnceMessageV2Extension: {
+            message: { imageMessage: imageData },
+          },
+        },
+      };
+
+      assert.strictEqual(utils.baileysIs(webMessage, "image"), true);
+      assert.strictEqual(utils.getContent(webMessage, "image"), imageData);
+    });
+
+    it("should unwrap view once media from a quoted message", () => {
+      const videoData = { url: "quoted-view-once.mp4", seconds: 7 };
+      const webMessage = {
+        message: {
+          extendedTextMessage: {
+            contextInfo: {
+              quotedMessage: {
+                viewOnceMessageV2: {
+                  message: { videoMessage: videoData },
+                },
+              },
+            },
+          },
+        },
+      };
+
+      assert.strictEqual(utils.baileysIs(webMessage, "video"), true);
+      assert.strictEqual(utils.getContent(webMessage, "video"), videoData);
+    });
   });
 
   describe("getRandomNumber", () => {

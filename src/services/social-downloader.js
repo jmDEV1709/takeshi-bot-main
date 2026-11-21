@@ -3,9 +3,6 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { tiktokdl } from "@bochilteam/scraper-tiktok";
-import { instagramdl } from "@bochilteam/scraper-instagram";
-import { twitter } from "@bochilteam/scraper-twitter";
 import { TEMP_DIR } from "../config.js";
 import { getRandomName } from "../utils/index.js";
 
@@ -16,7 +13,13 @@ function getYtDlpBinary() {
   if (process.env.YTDLP_PATH) return process.env.YTDLP_PATH;
 
   const localBinary = path.resolve(process.cwd(), ".bin", "yt-dlp");
-  return fs.existsSync(localBinary) ? localBinary : "yt-dlp";
+  if (fs.existsSync(localBinary)) return localBinary;
+
+  const systemCandidates = [
+    "/usr/local/bin/yt-dlp",
+    "/usr/bin/yt-dlp",
+  ];
+  return systemCandidates.find((candidate) => fs.existsSync(candidate)) || "yt-dlp";
 }
 
 function validateUrl(rawUrl, platform) {
@@ -49,21 +52,33 @@ function validateUrl(rawUrl, platform) {
 
 async function resolveScraperUrl(url, platform) {
   if (platform === "instagram") {
+    const { instagramdl } = await import("@bochilteam/scraper-instagram");
     const results = await instagramdl(url);
-    const video = Array.isArray(results)
-      ? results.find((item) => item?.type === "video" && item.url)
-      : null;
+    const items = Array.isArray(results) ? results : [results];
+    const video =
+      items.find((item) => item?.type === "video" && item.url) ||
+      items.find((item) => item?.url);
     if (video?.url) return video.url;
   } else if (platform === "tiktok") {
+    const { tiktokdl } = await import("@bochilteam/scraper-tiktok");
     const data = await tiktokdl(url);
-    const videoUrl = data?.video?.noWatermark || data?.video?.withWatermark;
+    const videoUrl =
+      data?.video?.noWatermark ||
+      data?.video?.withWatermark ||
+      data?.video?.play ||
+      data?.videoUrl ||
+      data?.url;
     if (videoUrl) return videoUrl;
   } else {
+    const { twitter } = await import("@bochilteam/scraper-twitter");
     const variants = await twitter(url);
-    const videos = variants
+    const list = Array.isArray(variants) ? variants : variants?.videos || [];
+    const videos = list
       .filter((variant) => variant?.url)
-      .filter((variant) =>
-        String(variant.content_type || "").includes("video/mp4"),
+      .filter(
+        (variant) =>
+          !variant.content_type ||
+          String(variant.content_type).includes("video/mp4"),
       )
       .sort((a, b) => Number(b.bitrate || 0) - Number(a.bitrate || 0));
     if (videos[0]?.url) return videos[0].url;
@@ -75,6 +90,8 @@ async function resolveScraperUrl(url, platform) {
 async function findCookiesFile() {
   const candidates = [
     process.env.YTDLP_COOKIES_FILE,
+    path.resolve(process.cwd(), "cookies", "cookies.txt"),
+    path.resolve(process.cwd(), "cookies.txt"),
     "/app/cookies/cookies.txt",
   ].filter(Boolean);
 
@@ -96,6 +113,10 @@ async function downloadWithYtDlp(url) {
     "--no-playlist",
     "--no-warnings",
     "--no-progress",
+    "--retries",
+    "3",
+    "--fragment-retries",
+    "3",
     "-f",
     "best[ext=mp4]/best",
     "-o",
@@ -147,6 +168,12 @@ async function downloadWithYtDlp(url) {
 export async function downloadSocialVideo(url, platform) {
   const validUrl = validateUrl(url, platform);
   await fs.promises.mkdir(TEMP_DIR, { recursive: true });
+
+  try {
+    return await downloadWithYtDlp(validUrl);
+  } catch (error) {
+    if (error.message === "YTDLP_NOT_FOUND") throw error;
+  }
 
   let downloadUrl;
   try {

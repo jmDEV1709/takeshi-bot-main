@@ -94,6 +94,10 @@ function getDownloadError(error, mediaType) {
     return new Error("YTDLP_NOT_FOUND");
   }
 
+  if (/timed out|timeout/i.test(details)) {
+    return new Error("YTDLP_TIMEOUT");
+  }
+
   return error;
 }
 
@@ -107,6 +111,12 @@ async function downloadYouTubeMedia(url, mediaType) {
     "--no-playlist",
     "--no-warnings",
     "--no-progress",
+    "--retries",
+    "3",
+    "--fragment-retries",
+    "3",
+    "--socket-timeout",
+    "60",
     "--restrict-filenames",
     "--max-downloads",
     "1",
@@ -158,7 +168,10 @@ async function downloadYouTubeMedia(url, mediaType) {
             `youtube:player_client=${playerClient}`,
             ytDlpArgs.at(-1),
           ],
-          { maxBuffer: 1024 * 1024 },
+          {
+            maxBuffer: 1024 * 1024,
+            timeout: 300000,
+          },
         );
 
         const expectedExtensions =

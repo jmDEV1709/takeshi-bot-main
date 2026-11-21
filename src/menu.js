@@ -78,10 +78,6 @@ export function menuMessage(groupJid) {
 ╰━━─「⭐」─━━
 
 ╭━━⪩ PRINCIPAL ⪨━━
-▢
-▢ • ${prefix}attp
-▢ • ${prefix}brat
-▢ • ${prefix}bratvid
 ▢ • ${prefix}cep
 ▢ • ${prefix}exemplos-de-mensagens
 ▢ • ${prefix}fake-chat
@@ -96,7 +92,6 @@ export function menuMessage(groupJid) {
 ▢ • ${prefix}removebg
 ▢ • ${prefix}sticker
 ▢ • ${prefix}suporte
-▢ • ${prefix}to-gif
 ▢ • ${prefix}to-image
 ▢ • ${prefix}to-mp3
 ▢ • ${prefix}ttp
@@ -110,7 +105,6 @@ export function menuMessage(groupJid) {
 ▢ • ${prefix}instagram (insta)
 ▢ • ${prefix}play-audio (play)
 ▢ • ${prefix}play-video
-▢ • ${prefix}pinterest
 ▢ • ${prefix}tik-tok (tk)
 ▢ • ${prefix}tik-tok-audio
 ▢ • ${prefix}xtwitter
@@ -128,6 +122,8 @@ export function menuMessage(groupJid) {
 ▢ • ${prefix}lutar
 ▢ • ${prefix}matar
 ▢ • ${prefix}socar
+▢ • ${prefix}rankbunda
+▢ • ${prefix}rankpenis
 ▢
 ╰━━─「🎡」─━━
 

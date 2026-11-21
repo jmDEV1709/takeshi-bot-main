@@ -178,18 +178,45 @@ export function baileysIs(webMessage, context) {
 }
 
 export function getContent(webMessage, context) {
-  return (
-    webMessage?.message?.[`${context}Message`] ||
-    webMessage?.message?.extendedTextMessage?.contextInfo?.quotedMessage?.[
-      `${context}Message`
-    ] ||
-    webMessage?.message?.viewOnceMessage?.message?.[`${context}Message`] ||
-    webMessage?.message?.extendedTextMessage?.contextInfo?.quotedMessage
-      ?.viewOnceMessage?.message?.[`${context}Message`] ||
-    webMessage?.message?.viewOnceMessageV2?.message?.[`${context}Message`] ||
-    webMessage?.message?.extendedTextMessage?.contextInfo?.quotedMessage
-      ?.viewOnceMessageV2?.message?.[`${context}Message`]
-  );
+  const unwrapMessage = (message) => {
+    let current = message;
+    const visited = new Set();
+
+    while (current && typeof current === "object" && !visited.has(current)) {
+      visited.add(current);
+
+      if (current.ephemeralMessage?.message) {
+        current = current.ephemeralMessage.message;
+        continue;
+      }
+      if (current.viewOnceMessage?.message) {
+        current = current.viewOnceMessage.message;
+        continue;
+      }
+      if (current.viewOnceMessageV2?.message) {
+        current = current.viewOnceMessageV2.message;
+        continue;
+      }
+      if (current.viewOnceMessageV2Extension?.message) {
+        current = current.viewOnceMessageV2Extension.message;
+        continue;
+      }
+      break;
+    }
+
+    return current || {};
+  };
+
+  const directMessage = unwrapMessage(webMessage?.message);
+  const directContent = directMessage?.[`${context}Message`];
+  if (directContent) return directContent;
+
+  const quotedMessage =
+    webMessage?.message?.extendedTextMessage?.contextInfo?.quotedMessage ||
+    webMessage?.message?.imageMessage?.contextInfo?.quotedMessage ||
+    webMessage?.message?.videoMessage?.contextInfo?.quotedMessage;
+
+  return unwrapMessage(quotedMessage)?.[`${context}Message`];
 }
 
 export function getExtensionFromMimeType(mimeType, fallback = "bin") {
@@ -526,11 +553,7 @@ export function extractUserLid(data) {
 }
 
 export function hasDirectMedia(webMessage, context) {
-  return (
-    webMessage?.message?.[`${context}Message`] ||
-    webMessage?.message?.viewOnceMessage?.message?.[`${context}Message`] ||
-    webMessage?.message?.viewOnceMessageV2?.message?.[`${context}Message`]
-  );
+  return Boolean(getContent(webMessage, context));
 }
 
 export const GROUP_PARTICIPANT_ADD = 27;

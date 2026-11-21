@@ -8,7 +8,12 @@ import webp from "node-webpmux";
 import fs from "node:fs";
 import path from "node:path";
 import { BOT_EMOJI, BOT_NAME, TEMP_DIR } from "../config.js";
-import { getRandomName, getRandomNumber, getUserName } from "../utils/index.js";
+import {
+  getContent,
+  getRandomName,
+  getRandomNumber,
+  getUserName,
+} from "../utils/index.js";
 
 export async function addStickerMetadata(media, metadata) {
   const tmpFileIn = getRandomName("webp");
@@ -231,10 +236,10 @@ export async function createSticker(paramsHandler) {
       }
 
       const maxDuration = 10;
-      const seconds =
-        webMessage.message?.videoMessage?.seconds ||
-        webMessage.message?.extendedTextMessage?.contextInfo?.quotedMessage
-          ?.videoMessage?.seconds;
+      const videoContent =
+        webMessage.message?.videoMessage ||
+        getContent(webMessage, "video");
+      const seconds = Number(videoContent?.seconds || 0);
 
       if (!seconds || seconds > maxDuration) {
         if (inputPath && fs.existsSync(inputPath)) {
