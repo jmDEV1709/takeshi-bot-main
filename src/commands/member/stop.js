@@ -1,11 +1,19 @@
+// src/commands/member/stop.js
 import { PREFIX } from "../../config.js";
-import { InvalidParameterError } from "../../errors/index.js";
 import {
   finishStopGame,
   startStopGame,
   submitStopAnswers,
 } from "../../services/stop-game.js";
 import { getUserName, isGroup } from "../../utils/index.js";
+
+function extractRawText(webMessage) {
+  return (
+    webMessage?.message?.conversation ||
+    webMessage?.message?.extendedTextMessage?.text ||
+    ""
+  );
+}
 
 export default {
   name: "stop",
@@ -28,10 +36,10 @@ export default {
   }) => {
     const senderJid = userJid || userLid;
 
-    // 1. FLUXO NO PRIVADO: Recebe a lista preenchida e NÃO responde nada no PV
+    // 1. FLUXO NO PRIVADO: Lê o texto bruto completo (preservando todas as quebras de linha)
     if (!isGroup(remoteJid)) {
-      const text = fullArgs || "";
-      const idMatch = text.match(/ID:\s*([A-Z0-9]{4})/i);
+      const rawText = extractRawText(webMessage) || fullArgs || "";
+      const idMatch = rawText.match(/ID:\s*#?([A-Z0-9]{4})/i);
 
       if (!idMatch) {
         return; // Ignora silenciosamente mensagens sem ID válido no PV
@@ -47,8 +55,8 @@ export default {
         });
       };
 
-      // Registra a resposta em silêncio (sem chamar sendReply ou sendReact no PV)
-      submitStopAnswers(gameId, senderJid, playerName, text, sendGroupResult);
+      // Registra em silêncio (sem responder nem reagir no PV)
+      submitStopAnswers(gameId, senderJid, playerName, rawText, sendGroupResult);
       return;
     }
 
@@ -84,21 +92,31 @@ export default {
 
     const { game, categories } = result;
 
-    // Envia instruções no grupo
+    // Mensagem 1: Regras e letra sorteada
     await sendReply(
-      `🎮 *STOP / ADEDANHA INICIADO!*\n\n` +
+      `🎮 *STOP / ADEDANHA INICIADO!*\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n` +
         `🔤 *Letra:* *${game.letter}*\n` +
         `👥 *Vagas:* Máximo de *4 jogadores*\n` +
-        `⏱️ *Tempo:* 90 segundos (ou encerra assim que 4 pessoas enviarem)\n\n` +
+        `⏱️ *Tempo:* *90 segundos*\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n` +
         `📲 *Como jogar:*\n` +
-        `1️⃣ Copie a mensagem abaixo.\n` +
+        `1️⃣ Copie a ficha logo abaixo.\n` +
         `2️⃣ Cole no *meu privado*, preencha as 7 categorias com a letra *${game.letter}* e envie.\n` +
-        `🤫 _Não responderei nada no privado; o resultado sai direto aqui no grupo!_`
+        `🤫 _Não responderei nada no privado; o placar sai direto aqui no grupo!_`
     );
 
-    // Envia o template limpo em uma segunda mensagem para facilitar o "Copiar" no celular
-    const templateLines = categories.map((c) => `${c.label}: `).join("\n");
-    const copyTemplate = `${PREFIX}stop-resp ID: ${game.id}\n${templateLines}`;
+    // Mensagem 2: Ficha espaçada e formatada para facilitar o toque e preenchimento no celular
+    const templateLines = categories
+      .map((c) => `${c.emoji} *${c.label}:* `)
+      .join("\n\n");
+
+    const copyTemplate =
+      `${PREFIX}stop-resp\n` +
+      `🆔 *ID:* #${game.id}\n` +
+      `🔤 *Letra:* ${game.letter}\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `${templateLines}`;
 
     await socket.sendMessage(remoteJid, { text: copyTemplate });
   },
