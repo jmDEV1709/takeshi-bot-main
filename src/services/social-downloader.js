@@ -51,41 +51,40 @@ function validateUrl(rawUrl, platform) {
 }
 
 async function resolveScraperUrl(url, platform) {
-  if (platform === "instagram") {
-    const { instagramdl } = await import("@bochilteam/scraper-instagram");
-    const results = await instagramdl(url);
-    const items = Array.isArray(results) ? results : [results];
-    const video =
-      items.find((item) => item?.type === "video" && item.url) ||
-      items.find((item) => item?.url);
-    if (video?.url) return video.url;
-  } else if (platform === "tiktok") {
-    const { tiktokdl } = await import("@bochilteam/scraper-tiktok");
-    const data = await tiktokdl(url);
-    const videoUrl =
-      data?.video?.noWatermark ||
-      data?.video?.withWatermark ||
-      data?.video?.play ||
-      data?.videoUrl ||
-      data?.url;
-    if (videoUrl) return videoUrl;
-  } else {
-    const { twitter } = await import("@bochilteam/scraper-twitter");
-    const variants = await twitter(url);
-    const list = Array.isArray(variants) ? variants : variants?.videos || [];
-    const videos = list
-      .filter((variant) => variant?.url)
-      .filter(
-        (variant) =>
-          !variant.content_type ||
-          String(variant.content_type).includes("video/mp4"),
-      )
-      .sort((a, b) => Number(b.bitrate || 0) - Number(a.bitrate || 0));
-    if (videos[0]?.url) return videos[0].url;
+  if (platform === "tiktok") {
+    // Fallback confiável via TikWM quando o yt-dlp sofre bloqueio de IP
+    const { data } = await axios.post(
+      "https://www.tikwm.com/api/",
+      new URLSearchParams({ url, hd: "1" }),
+      {
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        timeout: 20000,
+      }
+    );
+
+    const videoUrl = data?.data?.hdplay || data?.data?.play;
+    if (videoUrl) {
+      return videoUrl.startsWith("http")
+        ? videoUrl
+        : `https://www.tikwm.com${videoUrl}`;
+    }
   }
+
+  if (platform === "x") {
+    // Fallback via API pública vxtwitter / fxtwitter
+    const apiUrl = url
+      .replace("x.com", "api.vxtwitter.com")
+      .replace("twitter.com", "api.vxtwitter.com");
+    const { data } = await axios.get(apiUrl, { timeout: 15000 });
+    const media = data?.media_extended?.find((m) => m.type === "video");
+    if (media?.url) return media.url;
+  }
+
 
   throw new Error("VIDEO_NOT_FOUND");
 }
+
+
 
 async function findCookiesFile() {
   const candidates = [
@@ -113,6 +112,8 @@ async function downloadWithYtDlp(url) {
     "--no-playlist",
     "--no-warnings",
     "--no-progress",
+    "--user-agent",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
     "--retries",
     "3",
     "--fragment-retries",
@@ -159,7 +160,7 @@ async function downloadWithYtDlp(url) {
       files
         .filter((file) => file.startsWith(`${path.basename(outputBase)}.`))
         .map((file) =>
-          fs.promises.unlink(path.join(TEMP_DIR, file)).catch(() => {}),
+          fs.promises.unlink(path.join(TEMP_DIR, file)).catch(() => { }),
         ),
     );
   }

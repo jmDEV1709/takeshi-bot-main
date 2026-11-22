@@ -20,7 +20,9 @@ export default {
     sendSuccessReact,
     sendErrorReply,
   }) => {
-    if (!fullArgs.length) {
+    const url = fullArgs.trim();
+
+    if (!url) {
       throw new InvalidParameterError(
         "Você precisa enviar uma URL do X (Twitter)!",
       );
@@ -29,7 +31,7 @@ export default {
     await sendWaitReact();
 
     try {
-      const video = await downloadSocialVideo(fullArgs[0], "x");
+      const video = await downloadSocialVideo(url, "x");
       await sendSuccessReact();
       await sendVideoFromBuffer(video, "Vídeo baixado do X");
     } catch (error) {

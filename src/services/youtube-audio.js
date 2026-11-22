@@ -5,8 +5,8 @@ import { promisify } from "node:util";
 import { TEMP_DIR } from "../config.js";
 
 const execFileAsync = promisify(execFile);
-const YOUTUBE_PLAYER_CLIENTS = ["web_safari", "mweb", "android_vr"];
-
+// Linha 8: Priorize clientes que não exigem PO Token em servidor
+const YOUTUBE_PLAYER_CLIENTS = ["tv_embedded", "android_vr", "ios", "mweb"];
 function isUrl(value) {
   return /^https?:\/\//i.test(value);
 }
@@ -186,9 +186,8 @@ async function downloadYouTubeMedia(url, mediaType) {
         lastError = error;
         const expectedExtensions =
           mediaType === "audio" ? [".mp3"] : [".mp4", ".mkv", ".webm"];
-        const completedFiles = (await fs.promises.readdir(outputDir)).filter(
-          (file) =>
-            expectedExtensions.some((extension) => file.endsWith(extension)),
+        const completedFiles = (await fs.promises.readdir(outputDir)).filter((file) =>
+          expectedExtensions.some((extension) => file.endsWith(extension)),
         );
         if (completedFiles.length) {
           return {
@@ -199,9 +198,6 @@ async function downloadYouTubeMedia(url, mediaType) {
 
         const details = `${error.message || ""}\n${error.stderr || ""}`;
         if (/enoent|yt-dlp/i.test(error.code || "") || error.code === "ENOENT") {
-          break;
-        }
-        if (/sign in|not a bot|login required|authentication/i.test(details)) {
           break;
         }
         const partialFiles = await fs.promises.readdir(outputDir);

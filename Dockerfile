@@ -13,6 +13,7 @@ RUN apt-get update \
         build-essential \
         ca-certificates \
         chromium \
+        curl \
         ffmpeg \
         fonts-liberation \
         giflib-tools \
@@ -35,7 +36,8 @@ RUN apt-get update \
         python3 \
         python3-pip \
         webp \
-    && python3 -m pip install --no-cache-dir --break-system-packages yt-dlp \
+    && curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp \
+    && chmod a+rx /usr/local/bin/yt-dlp \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

@@ -16,6 +16,7 @@ export default {
     args,
     socket,
     remoteJid,
+    userJid, // Use userJid como fallback se disponível no seu handler
     userLid,
     sendErrorReply,
     sendWaitReply,
@@ -27,36 +28,36 @@ export default {
       );
     }
 
-    const targetLid = args[0] ? `${onlyNumbers(args[0])}@lid` : userLid;
-
     await sendWaitReply("Carregando perfil...");
 
     try {
+      const groupMetadata = await socket.groupMetadata(remoteJid);
+      const rawTarget = args[0] ? onlyNumbers(args[0]) : onlyNumbers(userJid || userLid);
+
+      // Procura o participante tanto pelo JID (@s.whatsapp.net) quanto pelo LID (@lid)
+      const participant = groupMetadata.participants.find(
+        (p) =>
+          onlyNumbers(p.id) === rawTarget ||
+          (p.lid && onlyNumbers(p.lid) === rawTarget)
+      );
+
+      // Prioriza o JID padrão (@s.whatsapp.net) para buscar a foto no Baileys
+      const targetJid = participant?.id?.includes("@s.whatsapp.net")
+        ? participant.id
+        : `${rawTarget}@s.whatsapp.net`;
+
+      const mentionId = participant?.id || targetJid;
       let profilePicUrl;
-      let userRole = "Membro";
+      let userRole = participant?.admin ? "Administrador" : "Membro";
 
       try {
-        const { profileImage } = await getProfileImageData(socket, targetLid);
+        const { profileImage } = await getProfileImageData(socket, targetJid);
         profilePicUrl = profileImage || `${ASSETS_DIR}/images/default-user.png`;
       } catch (error) {
         errorLog(
-          `Erro ao tentar pegar dados do usuário ${targetLid}: ${JSON.stringify(
-            error,
-            null,
-            2
-          )}`
+          `Erro ao tentar pegar foto do usuário ${targetJid}: ${error.message}`
         );
         profilePicUrl = `${ASSETS_DIR}/images/default-user.png`;
-      }
-
-      const groupMetadata = await socket.groupMetadata(remoteJid);
-
-      const participant = groupMetadata.participants.find(
-        (participant) => participant.id === targetLid
-      );
-
-      if (participant?.admin) {
-        userRole = "Administrador";
       }
 
       const randomPercent = Math.floor(Math.random() * 100);
@@ -64,22 +65,20 @@ export default {
       const beautyLevel = Math.floor(Math.random() * 100) + 1;
 
       const mensagem = `
-👤 *Nome:* @${targetLid.split("@")[0]}
-🎖️ *Cargo:* ${userRole}
+👤 *Nome:* @${mentionId.split("@")[0]}
+📊 *Nível:* ${beautyLevel}
 
 🌚 *Programa:* R$ ${programPrice}
 🐮 *Gado:* ${randomPercent + 7 || 5}%
 🎱 *Passiva:* ${randomPercent + 5 || 10}%
-✨ *Beleza:* ${beautyLevel}%`;
-
-      const mentions = [targetLid];
+✨ *Sex Appeal:* ${beautyLevel}%`;
 
       await sendSuccessReact();
 
       await socket.sendMessage(remoteJid, {
         image: { url: profilePicUrl },
         caption: mensagem,
-        mentions: mentions,
+        mentions: [mentionId],
       });
     } catch (error) {
       console.error(error);
