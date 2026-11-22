@@ -10,15 +10,15 @@ const DICTIONARY = {
     "baru", "biriba", "buriti", "cacau", "cagaita", "caja", "caju", "caqui",
     "carambola", "castanha", "cereja", "cidra", "ciriguela", "coco", "cupuacu",
     "damasco", "embauba", "figo", "framboesa", "fruta do conde", "fruta pao",
-    "goiaba", "graviola", "groselha", "guabiroba", "guaraná", "guarana", "inga",
+    "goiaba", "graviola", "groselha", "guabiroba", "guarana", "inga",
     "jabuticaba", "jaca", "jamabo", "jambo", "jatoba", "jenipapo", "juazeiro",
     "jujuba", "kiwi", "laranja", "lichia", "limao", "longan", "maca", "macadamia",
     "mamao", "mamoncillo", "manga", "mangaba", "mangostao", "maracuja", "marolo",
     "melancia", "melao", "mirtilo", "morango", "murici", "nectarina", "nespera",
     "nira", "noz", "oxicoco", "papaia", "pequi", "pera", "pessego", "pinha",
-    "pitaia", "pitanga", "pitaya", "pitomba", "pomelo", "puça", "puca", "rambutao",
+    "pitaia", "pitanga", "pitaya", "pitomba", "pomelo", "puca", "rambutao",
     "roma", "sapoti", "seriguela", "tamarindo", "tangerina", "tapereba", "tomate",
-    "toranja", "tucuma", "umbu", "umari", "uva", "uvaia", "veludo", "xixá", "xixa"
+    "toranja", "tucuma", "umbu", "umari", "uva", "uvaia", "veludo", "xixa"
   ]),
   animais: new Set([
     "abelha", "abutre", "acaro", "aguia", "albacora", "albatroz", "alce", "alpaca",
@@ -36,7 +36,7 @@ const DICTIONARY = {
     "cupim", "curio", "cutia", "damiao", "danado", "dgongo", "diabo da tasmania",
     "dinossauro", "doninha", "dourado", "dragao de comodo", "dromedario", "egua",
     "elefante", "ema", "enguia", "enxova", "escorpiao", "esquilo", "estrela do mar",
-    "faisao", "falcao", "furão", "furao", "flamingo", "foca", "formiga", "frango",
+    "faisao", "falcao", "furao", "flamingo", "foca", "formiga", "frango",
     "fura-bolo", "gafanhoto", "gaivota", "galinha", "galo", "gamba", "ganso",
     "garca", "gato", "gaviao", "gazela", "gecko", "gerbo", "gibao", "girafa",
     "gnu", "golfinho", "gorila", "gralha", "grilo", "guara", "guaxinim", "harpia",
@@ -58,8 +58,8 @@ const DICTIONARY = {
     "picapau", "pinguim", "piolho", "piranha", "pirarucu", "piroca", "planaria",
     "platipus", "polvo", "pombo", "ponei", "porco", "porco espinho", "porquinho da india",
     "preguica", "presa", "pulga", "puma", "quati", "quero quero", "quetzal",
-    "raia", "rã", "ra", "raposa", "rato", "ratazana", "raya", "rena", "rinoceronte",
-    "robalo", "rouxinol", "sabiá", "sabia", "salamandra", "salmao", "sanguessuga",
+    "raia", "ra", "raposa", "rato", "ratazana", "raya", "rena", "rinoceronte",
+    "robalo", "rouxinol", "sabia", "salamandra", "salmao", "sanguessuga",
     "sapo", "sardinha", "sauim", "serpente", "sertanejo", "suricata", "surucucu",
     "tainha", "tamandua", "tamboril", "tapioca", "tarantula", "tartaruga", "tatu",
     "tatu bola", "tatu canastra", "tatu galinha", "teiu", "tenia", "tentaculo",
@@ -74,13 +74,13 @@ const DICTIONARY = {
     "alabastro", "amarelo", "amarelo canario", "amarelo ouro", "amarelo queimado",
     "ambar", "ametista", "anil", "aquamarina", "areia", "argentado", "aurore",
     "avela", "azul", "azul bebe", "azul celeste", "azul cobalto", "azul marinho",
-    "azul pavão", "azul pavao", "azul petroleo", "azul royal", "azul turquesa",
+    "azul pavao", "azul petroleo", "azul royal", "azul turquesa",
     "bege", "berinjela", "bordo", "branco", "branco gelo", "branco neve",
     "branco perola", "bronze", "caqui", "caramelo", "carmesim", "carmin",
     "castanho", "castanho claro", "castanho escuro", "cobre", "celeste", "ceruleo",
     "champanhe", "ciano", "cinza", "cinza chumbo", "cinza claro", "cinza escuro",
     "cinza prata", "cinza rato", "citrino", "cobalto", "conhaque", "coral",
-    "creme", "ciano", "damasco", "dourado", "ebano", "escarlate", "esmeralda",
+    "creme", "damasco", "dourado", "ebano", "escarlate", "esmeralda",
     "ferrugem", "fucsia", "gelo", "grena", "grafite", "heliotropio", "indigo",
     "jade", "jambo", "laranja", "laranja neon", "lavanda", "lilas", "limao",
     "loiro", "louro", "magenta", "magno", "malva", "marfim", "marrom",
@@ -126,10 +126,28 @@ const DICTIONARY = {
     "romenia", "ruanda", "russia", "sao cristovao e nevis", "sao marinho",
     "sao tome e principe", "sao vicente e granadinas", "seicheles", "senegal",
     "serra leoa", "servia", "singapura", "siria", "somalia", "sri lanka",
-    "sudao", "sudao do sul", "suecia", "suica", "suriname", "tailandia", "taiwan", "tanzania", "tchequia", "togo", "tonga", "trindade e tobago", "tunisia", "turcomenistao", "turquia", "tuvalu",
+    "sudao", "sudao do sul", "suecia", "suica", "suriname", "tailandia",
+    "taiwan", "tajiquistao", "tanzania", "tchequia", "timor leste", "togo",
+    "tonga", "trindade e tobago", "tunisia", "turcomenistao", "turquia", "tuvalu",
     "ucrania", "uganda", "uruguai", "uzbequistao", "vanuatu", "vaticano",
     "venezuela", "vietna", "zambia", "zimbabue"
   ]),
+  veiculos: new Set([
+    "ambulancia", "aviao", "balao", "balsa", "barco", "bicicleta", "bike",
+    "bonde", "bote", "buggy", "caminhao", "caminhonete", "canoa", "caravela",
+    "carreta", "carretilha", "carro", "carroca", "charrete", "ciclomotor",
+    "conversivel", "coupe", "cruzeiro", "dirigivel", "drone", "escavadeira",
+    "escuna", "esqui aquatico", "estacao espacial", "ferry", "ferryboat",
+    "foguete", "furgao", "galeao", "gaiola", "glider", "hatch", "helicoptero",
+    "hidroaviao", "hovercraft", "iate", "jangada", "jato", "jipe", "jet ski",
+    "kayak", "caiaque", "kombi", "lancha", "limusine", "locomotiva", "metro",
+    "monociclo", "moto", "motocicleta", "motoneta", "navio", "onibus",
+    "patinete", "patins", "picape", "planador", "quadriciclo", "reboque",
+    "retroescavadeira", "rickshaw", "saveiro", "scooter", "sedan", "skate",
+    "submarino", "suv", "tanque", "taxi", "teleferico", "trator", "trem",
+    "triciclo", "trolebus", "tuk tuk", "utilitario", "van", "veleiro",
+    "velomotor", "vlt", "wagon"
+  ])
 };
 
 const CATEGORIES = [
@@ -161,6 +179,7 @@ function generateGameId() {
 function validateAnswer(category, rawAnswer, letter) {
   const clean = normalizeText(rawAnswer);
   if (!clean || clean.length < 2) return false;
+
 
 
   if (!clean.startsWith(letter.toLowerCase())) return false;
@@ -195,7 +214,7 @@ export function startStopGame(groupId, onFinishCallback) {
     timer: null,
   };
 
-
+  
   game.timer = setTimeout(() => {
     finishStopGame(groupId, onFinishCallback, "⏰ Tempo esgotado!");
   }, 90_000);
@@ -261,13 +280,47 @@ export function submitStopAnswers(gameId, playerJid, playerName, rawText, onFini
     valid: validMap,
   });
 
-  // Verificar se o jogo está completo
+
   if (game.submissions.size >= game.maxPlayers) {
     clearTimeout(game.timer);
     finishStopGame(game.groupId, onFinishCallback, "🏁 Limite de 4 jogadores atingido!");
   }
 
   return { accepted: true };
+}
+
+export function handlePrivateStopMessage({
+  remoteJid,
+  senderJid,
+  playerName,
+  rawText,
+  sendGroupResult,
+}) {
+  if (!remoteJid || remoteJid.endsWith("@g.us")) {
+    return false;
+  }
+
+  const text = String(rawText || "");
+  const idMatch = text.match(/ID:\s*#?([A-Z0-9]{4})/i);
+  if (!idMatch) {
+    return false;
+  }
+
+  const gameId = idMatch[1].toUpperCase();
+  const game = findGameById(gameId);
+  if (!game) {
+    return false;
+  }
+
+  const result = submitStopAnswers(
+    gameId,
+    senderJid,
+    playerName,
+    text,
+    sendGroupResult
+  );
+
+  return Boolean(result?.accepted);
 }
 
 export function finishStopGame(groupId, onFinishCallback, reason = "🛑 Rodada encerrada!") {
@@ -288,7 +341,8 @@ export function finishStopGame(groupId, onFinishCallback, reason = "🛑 Rodada 
     return;
   }
 
-  // Calcular pontuações
+
+
   const scores = new Map();
   players.forEach((p) => scores.set(p.jid, 0));
 
@@ -322,7 +376,6 @@ export function finishStopGame(groupId, onFinishCallback, reason = "🛑 Rodada 
     report += `\n`;
   }
 
-  // Montar o ranking
   const ranking = players
     .map((p) => ({ jid: p.jid, score: scores.get(p.jid) }))
     .sort((a, b) => b.score - a.score);

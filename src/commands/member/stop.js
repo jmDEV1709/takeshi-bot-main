@@ -2,15 +2,19 @@
 import { PREFIX } from "../../config.js";
 import {
   finishStopGame,
+  handlePrivateStopMessage,
   startStopGame,
-  submitStopAnswers,
 } from "../../services/stop-game.js";
 import { getUserName, isGroup } from "../../utils/index.js";
 
-function extractRawText(webMessage) {
+function extractAnyText(webMessage, fullArgs, args) {
   return (
     webMessage?.message?.conversation ||
     webMessage?.message?.extendedTextMessage?.text ||
+    webMessage?.message?.ephemeralMessage?.message?.conversation ||
+    webMessage?.message?.ephemeralMessage?.message?.extendedTextMessage?.text ||
+    fullArgs ||
+    (Array.isArray(args) ? args.join(" ") : "") ||
     ""
   );
 }
@@ -36,16 +40,9 @@ export default {
   }) => {
     const senderJid = userJid || userLid;
 
-    // 1. FLUXO NO PRIVADO: Lê o texto bruto completo (preservando todas as quebras de linha)
+    // 1. FLUXO NO PRIVADO: Lê o texto bruto completo sem responder no PV
     if (!isGroup(remoteJid)) {
-      const rawText = extractRawText(webMessage) || fullArgs || "";
-      const idMatch = rawText.match(/ID:\s*#?([A-Z0-9]{4})/i);
-
-      if (!idMatch) {
-        return; // Ignora silenciosamente mensagens sem ID válido no PV
-      }
-
-      const gameId = idMatch[1].toUpperCase();
+      const rawText = extractAnyText(webMessage, fullArgs, args);
       const playerName = getUserName(webMessage, senderJid);
 
       const sendGroupResult = async (targetGroupId, messageText, mentions) => {
@@ -55,8 +52,13 @@ export default {
         });
       };
 
-      // Registra em silêncio (sem responder nem reagir no PV)
-      submitStopAnswers(gameId, senderJid, playerName, rawText, sendGroupResult);
+      handlePrivateStopMessage({
+        remoteJid,
+        senderJid,
+        playerName,
+        rawText,
+        sendGroupResult,
+      });
       return;
     }
 
@@ -106,7 +108,7 @@ export default {
         `🤫 _Não responderei nada no privado; o placar sai direto aqui no grupo!_`
     );
 
-    // Mensagem 2: Ficha espaçada e formatada para facilitar o toque e preenchimento no celular
+    // Mensagem 2: Ficha espaçada e formatada para facilitar o toque no celular
     const templateLines = categories
       .map((c) => `${c.emoji} *${c.label}:* `)
       .join("\n\n");
