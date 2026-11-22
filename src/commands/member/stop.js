@@ -1,4 +1,3 @@
-// src/commands/member/stop.js
 import { PREFIX } from "../../config.js";
 import { InvalidParameterError } from "../../errors/index.js";
 import {
