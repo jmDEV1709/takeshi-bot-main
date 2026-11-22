@@ -38,7 +38,12 @@ export default {
     sendReply,
     sendErrorReply,
   }) => {
-    const senderJid = userJid || userLid;
+    const senderJid =
+      userJid ||
+      userLid ||
+      webMessage?.key?.participant ||
+      webMessage?.key?.participantAlt ||
+      remoteJid;
 
     // 1. FLUXO NO PRIVADO: Lê o texto bruto completo sem responder no PV
     if (!isGroup(remoteJid)) {
@@ -97,15 +102,15 @@ export default {
     // Mensagem 1: Regras e letra sorteada
     await sendReply(
       `🎮 *STOP / ADEDANHA INICIADO!*\n` +
-        `━━━━━━━━━━━━━━━━━━━━\n` +
-        `🔤 *Letra:* *${game.letter}*\n` +
-        `👥 *Vagas:* Máximo de *4 jogadores*\n` +
-        `⏱️ *Tempo:* *90 segundos*\n` +
-        `━━━━━━━━━━━━━━━━━━━━\n` +
-        `📲 *Como jogar:*\n` +
-        `1️⃣ Copie a ficha logo abaixo.\n` +
-        `2️⃣ Cole no *meu privado*, preencha as 7 categorias com a letra *${game.letter}* e envie.\n` +
-        `🤫 _Não responderei nada no privado; o placar sai direto aqui no grupo!_`
+      `━━━━━━━━━━━━━━━━━━━━\n` +
+      `🔤 *Letra:* *${game.letter}*\n` +
+      `👥 *Vagas:* Máximo de *4 jogadores*\n` +
+      `⏱️ *Tempo:* *90 segundos*\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n` +
+      `📲 *Como jogar:*\n` +
+      `1️⃣ Copie a ficha logo abaixo.\n` +
+      `2️⃣ Cole no *meu privado*, preencha as 7 categorias com a letra *${game.letter}* e envie.\n` +
+      `🤫 _Não responderei nada no privado; o placar sai direto aqui no grupo!_`
     );
 
     // Mensagem 2: Ficha espaçada e formatada para facilitar o toque no celular

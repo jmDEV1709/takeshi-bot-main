@@ -30,6 +30,17 @@ import {
 } from "../utils/antiDelete.js";
 import { getContent } from "../utils/index.js";
 import { downloadMediaMessage } from "baileys";
+import { handlePrivateStopMessage } from "../services/stop-game.js";
+
+function extractPrivateText(webMessage) {
+  return (
+    webMessage?.message?.conversation ||
+    webMessage?.message?.extendedTextMessage?.text ||
+    webMessage?.message?.ephemeralMessage?.message?.conversation ||
+    webMessage?.message?.ephemeralMessage?.message?.extendedTextMessage?.text ||
+    ""
+  );
+}
 
 export async function onMessagesUpsert({ socket, messages, startProcess }) {
   if (!messages.length) {
@@ -80,7 +91,34 @@ export async function onMessagesUpsert({ socket, messages, startProcess }) {
         continue;
       }
 
-      if (!webMessage?.key?.remoteJid?.endsWith("@g.us")) {
+      const remoteJid = webMessage?.key?.remoteJid;
+
+      // Intercepta respostas do STOP no privado antes do filtro que ignora chats não-grupo
+      if (remoteJid && !remoteJid.endsWith("@g.us")) {
+        const pvText = extractPrivateText(webMessage);
+        const pvSender =
+          webMessage?.key?.participant ||
+          webMessage?.key?.participantAlt ||
+          remoteJid;
+
+        if (pvText) {
+          handlePrivateStopMessage({
+            remoteJid,
+            senderJid: pvSender,
+            playerName: webMessage?.pushName || "Jogador",
+            rawText: pvText,
+            sendGroupResult: async (targetGroupId, messageText, mentions) => {
+              await socket.sendMessage(targetGroupId, {
+                text: messageText,
+                mentions,
+              });
+            },
+          });
+        }
+        continue;
+      }
+
+      if (!remoteJid?.endsWith("@g.us")) {
         continue;
       }
 
@@ -132,16 +170,16 @@ export async function onMessagesUpsert({ socket, messages, startProcess }) {
         )
       ) {
         try {
-          const { id, remoteJid, participant } = webMessage.key;
+          const { id, remoteJid: groupJid, participant } = webMessage.key;
 
           const deleteKey = {
-            remoteJid,
+            remoteJid: groupJid,
             fromMe: false,
             id,
             participant,
           };
 
-          await socket.sendMessage(remoteJid, { delete: deleteKey });
+          await socket.sendMessage(groupJid, { delete: deleteKey });
         } catch (error) {
           errorLog(
             `Erro ao deletar mensagem de membro silenciado, provavelmente eu não sou administrador do grupo! ${error.message}`,
