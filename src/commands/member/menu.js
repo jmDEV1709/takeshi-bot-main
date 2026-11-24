@@ -12,15 +12,24 @@ export default {
    */
   handle: async ({
     remoteJid,
+    sendReply,
     sendSuccessReact,
     sendImageFromFile,
     sendGifFromFile,
   }) => {
     await sendSuccessReact();
 
-    await sendImageFromFile(
-      path.join(ASSETS_DIR, "images", "takeshi-bot.png"),
-      `\n\n${menuMessage(remoteJid)}`,
-    );
+    await sendReply(menuMessage(remoteJid));
+
+    // =========================================================================
+    // [FOTO DO MENU - DESATIVADA / COMENTADA]
+    // Para voltar a enviar imagem junto com o menu, descomente o bloco abaixo
+    // e troque "takeshi-bot.png" pelo nome do novo arquivo em ASSETS_DIR/images:
+    //
+    // await sendImageFromFile(
+    //   path.join(ASSETS_DIR, "images", "takeshi-bot.png"),
+    //   `\n\n${menuMessage(remoteJid)}`,
+    // );
+    // =========================================================================
   },
 };
