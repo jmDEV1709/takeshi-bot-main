@@ -4,7 +4,6 @@ import path from "node:path";
 import { downloadMediaMessage } from "baileys";
 import { ASSETS_DIR, PREFIX } from "../../config.js";
 
-// Cache em memória dos pacotes originais antes de serem cortados pelo quotedMessage
 const rawMessageCache = new Map();
 let listenerAttached = false;
 
@@ -55,7 +54,6 @@ function attachRawListener(socket) {
         rawMessageCache.set(id, entry);
         rawMessageCache.set(`last:${jid}`, entry);
 
-        // Limpa entradas com mais de 5 minutos
         for (const [k, v] of rawMessageCache.entries()) {
           if (Date.now() - v.timestamp > 5 * 60 * 1000) {
             rawMessageCache.delete(k);
@@ -113,94 +111,98 @@ function scanAudioSignatures(buf) {
   return found;
 }
 
+async function runCommand({ socket, webMessage, sendReply, sendErrorReply }) {
+  attachRawListener(socket);
+
+  const jid = webMessage.key.remoteJid;
+  const ctx =
+    webMessage?.message?.extendedTextMessage?.contextInfo ||
+    webMessage?.message?.imageMessage?.contextInfo ||
+    webMessage?.message?.videoMessage?.contextInfo ||
+    webMessage?.message?.audioMessage?.contextInfo ||
+    webMessage?.message?.stickerMessage?.contextInfo;
+
+  const quoted = ctx?.quotedMessage;
+  const cached =
+    (ctx?.stanzaId && rawMessageCache.get(ctx.stanzaId)) ||
+    rawMessageCache.get(`last:${jid}`);
+
+  const targetMessage = cached?.fullMessage?.message || quoted;
+
+  if (!targetMessage) {
+    await sendReply(
+      `Listener ativado! Envie a figurinha com som agora e depois use *${PREFIX}inspecionar* (respondendo ou logo em seguida).`
+    );
+    return;
+  }
+
+  const unknownSymbols = cached?.unknownSymbols || extractUnknownProtoSymbols(targetMessage);
+  const rawJson = JSON.stringify(targetMessage, null, 2);
+
+  console.log("[INSPECT RAW ORIGINAL JSON]", rawJson);
+  console.log("[INSPECT UNKNOWN SYMBOLS]", JSON.stringify(unknownSymbols, null, 2));
+
+  const mediaMsg = cached?.fullMessage || (quoted?.stickerMessage
+    ? {
+      key: {
+        remoteJid: jid,
+        id: ctx.stanzaId,
+        participant: ctx.participant,
+      },
+      message: quoted,
+    }
+    : null);
+
+  let binarySummary = "";
+  if (mediaMsg?.message?.stickerMessage) {
+    try {
+      const buffer = await downloadMediaMessage(
+        mediaMsg,
+        "buffer",
+        {},
+        {
+          logger: undefined,
+          reuploadRequest: socket.updateMediaMessage,
+        }
+      );
+
+      const chunks = inspectRiffChunks(buffer);
+      const audioSigs = scanAudioSignatures(buffer);
+      const exifChunk = chunks.find((c) => c.fourcc === "EXIF" || c.fourcc === "XMP ");
+
+      const outDir = path.join(ASSETS_DIR, "temp");
+      fs.mkdirSync(outDir, { recursive: true });
+      fs.writeFileSync(path.join(outDir, `sound-sticker-${Date.now()}.webp`), buffer);
+
+      binarySummary =
+        `📦 *Bytes WebP:* ${buffer.length}\n` +
+        `🔊 *Assinaturas Áudio:* ${audioSigs.length ? audioSigs.join(", ") : "Nenhuma"}\n` +
+        (exifChunk?.utf8Text ? `🏷️ *EXIF/XMP:* ${exifChunk.utf8Text.slice(0, 300)}\n` : "");
+    } catch (err) {
+      binarySummary = `⚠️ *Erro mídia:* ${err.message}\n`;
+    }
+  }
+
+  const hasSymbols = Object.keys(unknownSymbols).length > 0;
+  const sourceLabel = cached ? "✅ Pacote Original Capturado" : "⚠️ Apenas Quoted (envie o sticker novamente para capturar o original)";
+
+  await sendReply(
+    `${sourceLabel}\n` +
+    binarySummary +
+    `🕵️ *Symbols Protobuf:* ${hasSymbols ? "\n```json\n" + JSON.stringify(unknownSymbols, null, 2).slice(0, 1200) + "\n```" : "Nenhum"}\n\n` +
+    `📄 *JSON da Mensagem:*\n` +
+    "```json\n" +
+    rawJson.slice(0, 2000) +
+    "\n```"
+  );
+}
+
 export default {
   name: "inspecionar",
   description: "Raio-X completo do pacote original (Symbols Protobuf, JSON bruto e WebP)",
   commands: ["inspecionar", "inspect", "raw"],
   usage: `${PREFIX}inspecionar`,
-  execute: async ({ socket, webMessage, sendReply, sendErrorReply }) => {
-    attachRawListener(socket);
-
-    const jid = webMessage.key.remoteJid;
-    const ctx =
-      webMessage?.message?.extendedTextMessage?.contextInfo ||
-      webMessage?.message?.imageMessage?.contextInfo ||
-      webMessage?.message?.videoMessage?.contextInfo ||
-      webMessage?.message?.audioMessage?.contextInfo ||
-      webMessage?.message?.stickerMessage?.contextInfo;
-
-    const quoted = ctx?.quotedMessage;
-    const cached =
-      (ctx?.stanzaId && rawMessageCache.get(ctx.stanzaId)) ||
-      rawMessageCache.get(`last:${jid}`);
-
-    const targetMessage = cached?.fullMessage?.message || quoted;
-
-    if (!targetMessage) {
-      await sendReply(
-        `Listener ativado! Envie a figurinha com som agora e depois use *${PREFIX}inspecionar* (respondendo ou logo em seguida).`
-      );
-      return;
-    }
-
-    const unknownSymbols = cached?.unknownSymbols || extractUnknownProtoSymbols(targetMessage);
-    const rawJson = JSON.stringify(targetMessage, null, 2);
-
-    console.log("[INSPECT RAW ORIGINAL JSON]", rawJson);
-    console.log("[INSPECT UNKNOWN SYMBOLS]", JSON.stringify(unknownSymbols, null, 2));
-
-    const mediaMsg = cached?.fullMessage || (quoted?.stickerMessage
-      ? {
-          key: {
-            remoteJid: jid,
-            id: ctx.stanzaId,
-            participant: ctx.participant,
-          },
-          message: quoted,
-        }
-      : null);
-
-    let binarySummary = "";
-    if (mediaMsg?.message?.stickerMessage) {
-      try {
-        const buffer = await downloadMediaMessage(
-          mediaMsg,
-          "buffer",
-          {},
-          {
-            logger: undefined,
-            reuploadRequest: socket.updateMediaMessage,
-          }
-        );
-
-        const chunks = inspectRiffChunks(buffer);
-        const audioSigs = scanAudioSignatures(buffer);
-        const exifChunk = chunks.find((c) => c.fourcc === "EXIF" || c.fourcc === "XMP ");
-
-        const outDir = path.join(ASSETS_DIR, "temp");
-        fs.mkdirSync(outDir, { recursive: true });
-        fs.writeFileSync(path.join(outDir, `sound-sticker-${Date.now()}.webp`), buffer);
-
-        binarySummary =
-          `📦 *Bytes WebP:* ${buffer.length}\n` +
-          `🔊 *Assinaturas Áudio:* ${audioSigs.length ? audioSigs.join(", ") : "Nenhuma"}\n` +
-          (exifChunk?.utf8Text ? `🏷️ *EXIF/XMP:* ${exifChunk.utf8Text.slice(0, 300)}\n` : "");
-      } catch (err) {
-        binarySummary = `⚠️ *Erro mídia:* ${err.message}\n`;
-      }
-    }
-
-    const hasSymbols = Object.keys(unknownSymbols).length > 0;
-    const sourceLabel = cached ? "✅ Pacote Original Capturado" : "⚠️ Apenas Quoted (envie o sticker novamente para capturar o original)";
-
-    await sendReply(
-      `${sourceLabel}\n` +
-      binarySummary +
-      `🕵️ *Symbols Protobuf:* ${hasSymbols ? "\n```json\n" + JSON.stringify(unknownSymbols, null, 2).slice(0, 1200) + "\n```" : "Nenhum"}\n\n` +
-      `📄 *JSON da Mensagem:*\n` +
-      "```json\n" +
-      rawJson.slice(0, 2000) +
-      "\n```"
-    );
-  },
+  handle: runCommand,
+  execute: runCommand,
+  run: runCommand,
 };
